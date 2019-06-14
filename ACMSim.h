@@ -4,11 +4,19 @@
 
 /* standard lib */
 #include <stdio.h> // printf #include <stdbool.h> // bool for _Bool and true for 1
-#include <stdbool.h> // bool for _Bool and true for 1
+// #include <stdbool.h> // bool for _Bool and true for 1
 #include <process.h>//reqd. for system function prototype
-#include <conio.h> // for clrscr, and getch()
+// #include <conio.h> // for clrscr, and getch()
 #include "stdlib.h" // for rand()
 #include "math.h"
+#include "time.h"
+
+#define VVVF_CONTROL 0
+#define IFOC 1
+#define DFOC 2
+#define CONTROL_STRATEGY IFOC
+
+#define SENSORLESS_CONTROL true
 
 /* How long should I go? */
 #define NUMBER_OF_LINES (200000)
@@ -21,11 +29,20 @@
 #define TS_INVERSE (IM_TS_INVERSE*DOWN_FREQ_EXE_INVERSE) // 4000
 
 
+/* Macro for Part Transformation*/
+#define AB2M(A, B, COS, SIN)  ( (A)*COS  + (B)*SIN )
+#define AB2T(A, B, COS, SIN)  ( (A)*-SIN + (B)*COS )
+#define MT2A(M, T, COS, SIN)  ( (M)*COS - (T)*SIN )
+#define MT2B(M, T, COS, SIN)  ( (M)*SIN + (T)*COS )
+
+
 /* General Constants */
 #define TRUE True
 #define FALSE False
 #define True (1)
 #define False (0)
+#define true 1
+#define false 0
 #define lTpi                  0.15915494309189535 // 1/(2*pi)
 #define TWO_PI_OVER_3         2.0943951023931953
 #define SIN_2PI_SLASH_3       0.86602540378443871 // sin(2*pi/3)
@@ -79,7 +96,7 @@ extern struct InductionMachineSimulated IM;
 
 
 /* Declaration of Utility Function */
-bool isNumber(double x);
+int isNumber(double x);
 void write_data_to_file(FILE *fw);
 
 #endif
