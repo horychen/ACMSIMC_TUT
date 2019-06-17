@@ -9,4 +9,4 @@ The numerical integration method is currently RK4, which is quite enough. DoPri5
 If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
 Please take a look at this link to 知乎: https://zhuanlan.zhihu.com/p/64445558
 
-In fact, now you can checkout my personal page for a list of tutorial videos at [My Page](horychen.github.io)
+In fact, now you can checkout my personal page for a list of tutorial videos at [My Page](https://horychen.github.io)
