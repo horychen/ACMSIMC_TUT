@@ -1,6 +1,10 @@
-
 #ifndef ACMSIM_H
 #define ACMSIM_H
+
+#define INDUCTION_MACHINE 1
+#define SYNCHRONOUS_MACHINE 2
+#define MACHINE_TYPE SYNCHRONOUS_MACHINE
+
 
 /* standard lib */
 #include <stdio.h> // printf #include <stdbool.h> // bool for _Bool and true for 1
@@ -13,12 +17,12 @@
 /* How long should I go? */
 #define NUMBER_OF_LINES (200000)
 
-#define IM_TS 1.25e-4
-#define IM_TS_INVERSE 8000
+#define MACHINE_TS 1.25e-4
+#define MACHINE_TS_INVERSE 8000
 #define DOWN_FREQ_EXE 2
 #define DOWN_FREQ_EXE_INVERSE 0.5
-#define TS (IM_TS*DOWN_FREQ_EXE) //2.5e-4 
-#define TS_INVERSE (IM_TS_INVERSE*DOWN_FREQ_EXE_INVERSE) // 4000
+#define TS (MACHINE_TS*DOWN_FREQ_EXE) //2.5e-4 
+#define TS_INVERSE (MACHINE_TS_INVERSE*DOWN_FREQ_EXE_INVERSE) // 4000
 
 
 /* General Constants */
@@ -73,6 +77,33 @@ struct InductionMachineSimulated{
 };
 extern struct InductionMachineSimulated IM;
 
+struct SynchronousMachineSimulated{
+    double x[3];
+    double rpm;
+    double rpm_cmd;
+    double rpm_deriv_cmd;
+    double Tload;
+    double Tem;
+
+    double R;
+    double Ld;
+    double Lq;
+    double KE;
+    double L0;
+    double L1;
+
+    double Js;
+    double npp;
+    double mu_m;
+    double Ts;
+
+    double id;
+    double iq;
+
+    double ud;
+    double uq;
+};
+extern struct SynchronousMachineSimulated SM;
 
 #include "controller.h"
 #include "observer.h"

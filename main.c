@@ -1,10 +1,11 @@
 #include "time.h"
 #include "ACMSim.h"
-#define VVVF_CONTROL 1
+#define VVVF_CONTROL true
 
+
+#if MACHINE_TYPE == INDUCTION_MACHINE
 struct InductionMachineSimulated IM;
-
-void IM_init(){
+void Machine_init(){
     int i;
     for(i=0;i<5;++i){
         IM.x[i] = 0.0;
@@ -36,17 +37,60 @@ void IM_init(){
     IM.ual = 0.0;
     IM.ube = 0.0;
 }
+#elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+struct SynchronousMachineSimulated SM;
+void Machine_init(){
+    int i;
+    for(i=0;i<3;++i){
+        IM.x[i] = 0.0;
+    }
+    SM.rpm = 0.0;
+    SM.rpm_cmd = 0.0;
+    SM.rpm_deriv_cmd = 0.0;
+    SM.Tload = 0.0;
+    SM.Tem = 0.0;
+
+    SM.R  = 0.45;
+    SM.Ld = 4.15*1e-3;
+    SM.Lq = 16.74*1e-3;
+    SM.KE = 0.104; // Vs/rad
+    SM.L0 = 0.5(SM.Ld + SM.Lq);
+    SM.L1 = 0.5(SM.Ld - SM.Lq);
+
+    SM.Js = 0.06; // Awaya92 using SM.omg
+    SM.npp = 2;
+    SM.mu_m = SM.npp/SM.Js;
+
+    SM.Ts  = MACHINE_TS;
+
+    SM.id = 0.0;
+    SM.iq = 0.0;
+
+    SM.ud = 0.0;
+    SM.uq = 0.0;
+}
+#endif
 
 void rK5_dynamics(double t, double *x, double *fx){
-    // electromagnetic model
-    fx[2] = IM.rreq*x[0] - IM.alpha*x[2] - x[4]*x[3];
-    fx[3] = IM.rreq*x[1] - IM.alpha*x[3] + x[4]*x[2];
-    fx[0] = (IM.ual - IM.rs*x[0] - fx[2])/IM.Lsigma;
-    fx[1] = (IM.ube - IM.rs*x[1] - fx[3])/IM.Lsigma;
+    #if MACHINE_TYPE == INDUCTION_MACHINE
+        // electromagnetic model
+        fx[2] = IM.rreq*x[0] - IM.alpha*x[2] - x[4]*x[3];
+        fx[3] = IM.rreq*x[1] - IM.alpha*x[3] + x[4]*x[2];
+        fx[0] = (IM.ual - IM.rs*x[0] - fx[2])/IM.Lsigma;
+        fx[1] = (IM.ube - IM.rs*x[1] - fx[3])/IM.Lsigma;
 
-    // mechanical model
-    IM.Tem = IM.npp*(x[1]*x[2]-x[0]*x[3]);
-    fx[4] = (IM.Tem - IM.Tload)*IM.mu_m;
+        // mechanical model
+        IM.Tem = IM.npp*(x[1]*x[2]-x[0]*x[3]);
+        fx[4] = (IM.Tem - IM.Tload)*IM.mu_m;
+    #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+        // electromagnetic model
+        fx[0] = ;
+        fx[1] = ;
+
+        // mechanical model
+        IM.Tem = IM.npp*(x[1]*x[2]-x[0]*x[3]);
+        fx[2] = (IM.Tem - IM.Tload)*IM.mu_m;
+    #endif
 }
 void rK555_Lin(double t, double *x, double hs){
     double k1[5], k2[5], k3[5], k4[5], xk[5];
@@ -108,12 +152,12 @@ int main(){
     printf("NUMBER_OF_LINES: %d\n\n", NUMBER_OF_LINES);
 
     /* Initialization */
-    IM_init();
+    Machine_init();
     CTRL_init();
 
     FILE *fw;
     fw = fopen("algorithm.dat", "w");
-    fprintf(fw, "x0,x1,x2,x3,x4\n");
+    write_header_to_file(fw);
 
     /* MAIN LOOP */
     clock_t  begin, end;
@@ -130,7 +174,7 @@ int main(){
         if(machine_simulation()){ 
             printf("Break the loop.\n");
             break;
-        } 
+        }
 
         if(++dfe==DOWN_FREQ_EXE){
             dfe = 0;
@@ -170,19 +214,32 @@ int main(){
 
 
 /* Utility */
+void write_header_to_file(FILE *fw){
+    #if MACHINE_TYPE == INDUCTION_MACHINE
+        fprintf(fw, "x0,x1,x2,x3,x4\n");
+    #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+        fprintf(fw, "x0,x1,x2\n");
+    #endif
+}
 void write_data_to_file(FILE *fw){
     static int bool_animate_on = false;
     static int j=0,jj=0; // j,jj for down sampling
 
     // if(CTRL.timebase>20)
     {
-    if(++j == 10)
-    {
-        j=0;
-        fprintf(fw, "%g,%g,%g,%g,%g\n",
-                IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.x[4]
-                );
-    }
+        if(++j == 10)
+        {
+            j=0;
+            #if MACHINE_TYPE == INDUCTION_MACHINE
+                fprintf(fw, "%g,%g,%g,%g,%g\n",
+                        IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.x[4]
+                        );
+            #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+                fprintf(fw, "%g,%g,%g\n",
+                        SM.x[0], SM.x[1], SM.x[2]
+                        );
+            #endif
+        }
     }
 
     if(bool_animate_on==false){
