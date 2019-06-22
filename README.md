@@ -7,8 +7,9 @@ This is a tutorial for those who hate using Simulink to simulate motor control.
 The numerical integration method is currently RK4, which is quite enough. 
 DoPri54 will be included in future revision.
 
-Introduction on current branches:
-- master: the skeleton with induction motor simulation and VVVF control.
+**Introduction on current branches:**
+- master: vvvf branch plus other utility features.
+- vvvf: the skeleton with induction motor simulation and VVVF control.
 - foc: field oriented control (direct/indirect) with basic sensorless control.
 
 > If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
