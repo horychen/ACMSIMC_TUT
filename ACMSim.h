@@ -5,25 +5,33 @@
 #define SYNCHRONOUS_MACHINE 2
 #define MACHINE_TYPE SYNCHRONOUS_MACHINE
 
-
 /* standard lib */
 #include <stdio.h> // printf #include <stdbool.h> // bool for _Bool and true for 1
 // #include <stdbool.h> // bool for _Bool and true for 1
 #include <process.h>//reqd. for system function prototype
-// #include <conio.h> // for clrscr, and getch()
+#include <conio.h> // for clrscr, and getch()
 #include "stdlib.h" // for rand()
 #include "math.h"
 #include "time.h"
 
-#define VVVF_CONTROL 0
-#define IFOC 1
-#define DFOC 2
-#define CONTROL_STRATEGY IFOC
+#if MACHINE_TYPE == INDUCTION_MACHINE
+    #define VVVF_CONTROL 0
+    #define IFOC 1
+    #define DFOC 2
+    #define CONTROL_STRATEGY IFOC
 
-#define SENSORLESS_CONTROL true
+    #define SENSORLESS_CONTROL true
+
+#elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+    #define NULL_D_AXIS_CURRENT_CONTROL -1
+    #define MTPA -2 // not supported
+    #define CONTROL_STRATEGY NULL_D_AXIS_CURRENT_CONTROL
+
+    #define SENSORLESS_CONTROL false
+#endif
 
 /* How long should I go? */
-#define NUMBER_OF_LINES (200000)
+#define NUMBER_OF_LINES (150000)
 
 #define MACHINE_TS 1.25e-4
 #define MACHINE_TS_INVERSE 8000
@@ -55,8 +63,8 @@
 // #define RPM_2_RAD_PER_SEC     0.20943951023931953 // (2/60*Tpi)
 // #define RAD_PER_SEC_2_RPM     4.7746482927568605 // 1/(im.npp/60*Tpi)
 #define abs                   use_fabs_instead_or_you_will_regret
-#define RAD_PER_SEC_2_RPM (60.0/(2*M_PI*im.npp))
-#define RPM_2_RAD_PER_SEC ((2*M_PI*im.npp)/60.0)
+#define RAD_PER_SEC_2_RPM (60.0/(2*M_PI*ACM.npp))
+#define RPM_2_RAD_PER_SEC ((2*M_PI*ACM.npp)/60.0)
 // #define PI_D 3.1415926535897932384626433832795 /* double */
 #define M_PI_OVER_180   0.017453292519943295
 
@@ -66,6 +74,8 @@
 #define PHASE_NUMBER 3
 
 
+
+#if MACHINE_TYPE == INDUCTION_MACHINE
 struct InductionMachineSimulated{
     double x[13]; ////////////////////////////////
     double rpm;
@@ -86,16 +96,17 @@ struct InductionMachineSimulated{
     double mu_m;
     double Ts;
 
-    double iqs;
-    double ids;
+    double ial;
+    double ibe;
 
     double ual;
     double ube;
 };
-extern struct InductionMachineSimulated IM;
+extern struct InductionMachineSimulated ACM;
 
+#elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
 struct SynchronousMachineSimulated{
-    double x[3];
+    double x[5];
     double rpm;
     double rpm_cmd;
     double rpm_deriv_cmd;
@@ -117,17 +128,26 @@ struct SynchronousMachineSimulated{
     double id;
     double iq;
 
+    double ial;
+    double ibe;
+
     double ud;
     double uq;
+
+    double ual;
+    double ube;
+
+    double theta_d;
 };
-extern struct SynchronousMachineSimulated SM;
+extern struct SynchronousMachineSimulated ACM;
+#endif
+
 
 #include "controller.h"
 #include "observer.h"
 
-
 /* Declaration of Utility Function */
-int isNumber(double x);
+void write_header_to_file(FILE *fw);
 void write_data_to_file(FILE *fw);
-
+int isNumber(double x);
 #endif

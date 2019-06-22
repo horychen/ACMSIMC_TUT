@@ -1,10 +1,9 @@
 #include "ACMSim.h"
 
+#if MACHINE_TYPE == INDUCTION_MACHINE
 struct InductionMachine im;
 struct Observer ob;
-
-
-void im_init(){
+void acm_init(){
     int i;
     for(i=0; i<2; ++i){
         im.us[i] = 0;
@@ -15,19 +14,19 @@ void im_init(){
         im.is_prev[i] = 0;        
     }
 
-    im.Js = IM.Js;
+    im.Js = ACM.Js;
     im.Js_inv = 1./im.Js;
-    im.rs = IM.rs;
-    im.rreq = IM.rreq;
-    im.alpha = IM.alpha;
-    im.Lsigma = IM.Lsigma;
+    im.rs = ACM.rs;
+    im.rreq = ACM.rreq;
+    im.alpha = ACM.alpha;
+    im.Lsigma = ACM.Lsigma;
     im.Lsigma_inv = 1/im.Lsigma;
-    im.Lmu = IM.Lmu;
-    im.Lmu_inv = IM.Lmu_inv;
-    im.npp = IM.npp;
+    im.Lmu = ACM.Lmu;
+    im.Lmu_inv = ACM.Lmu_inv;
+    im.npp = ACM.npp;
     im.omg = 0;
+    im.theta_r = 0.0;
 }
-
 void ob_init(){
 
     ob.Js = im.Js;
@@ -41,13 +40,12 @@ void ob_init(){
     ob.Lmu_inv = im.Lmu_inv;
     ob.npp = im.npp;
     ob.omg = im.omg;
+    im.theta_r = 0.0;
+    im.theta_d = 0.0;
 
     ob.psi_mu_al = 0.0;
     ob.psi_mu_be = 0.0;
 }
-
-
-
 void observation(){
     double rotor_flux_cmd, iMs, iTs, uMs_cmd, uTs_cmd;
 
@@ -79,4 +77,49 @@ void observation(){
 
     // Flux estimation 2: Current model (this is a bad flux estimator)    
 }
+
+#elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+struct SynchronousMachine sm;
+struct Observer ob;
+void acm_init(){
+    int i;
+    for(i=0; i<2; ++i){
+        sm.us[i] = 0;
+        sm.is[i] = 0;
+        sm.us_curr[i] = 0;
+        sm.is_curr[i] = 0;
+        sm.us_prev[i] = 0;
+        sm.is_prev[i] = 0;        
+    }
+
+    sm.Js = ACM.Js;
+    sm.Js_inv = 1./sm.Js;
+
+    sm.R = ACM.R;
+    sm.KE = ACM.KE;
+    sm.Ld = ACM.Ld;
+    sm.Lq = ACM.Lq;
+
+    sm.npp = ACM.npp;
+    sm.omg = 0;
+}
+void ob_init(){
+
+    ob.Js = ACM.Js;
+    ob.Js_inv = 1.0/ob.Js;
+
+    ob.R = ACM.R;
+    ob.KE = ACM.KE;
+    ob.Ld = ACM.Ld;
+    ob.Lq = ACM.Lq;
+
+    ob.npp = ACM.npp;
+    ob.omg = 0.0;
+
+    ob.eemf_al = 0.0;
+    ob.eemf_be = 0.0;
+}
+void observation(){
+}
+#endif
 

@@ -13,6 +13,7 @@ struct PI_Reg{
 };
 double PI(struct PI_Reg *r, double err);
 
+#if MACHINE_TYPE == INDUCTION_MACHINE
 struct ControllerForExperiment{
 
     double timebase;
@@ -63,8 +64,56 @@ struct ControllerForExperiment{
     struct PI_Reg pi_iMs;
     struct PI_Reg pi_iTs;
 };
-extern struct ControllerForExperiment CTRL;
+#elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+struct ControllerForExperiment{
 
+    double timebase;
+
+    double ual;
+    double ube;
+
+    double R;
+    double KE;
+    double Ld;
+    double Lq;
+
+    double Tload;
+    double rpm_cmd;
+
+    double Js;
+    double Js_inv;
+
+    double omg_fb;
+    double ial_fb;
+    double ibe_fb;
+    double psi_mu_al_fb;
+    double psi_mu_be_fb;
+
+    double rotor_flux_cmd;
+
+    double omg_ctrl_err;
+    double speed_ctrl_err;
+
+    double iMs;
+    double iTs;
+
+    double theta_M;
+    double cosT;
+    double sinT;
+
+    double omega_syn;
+
+    double uMs_cmd;
+    double uTs_cmd;
+    double iMs_cmd;
+    double iTs_cmd;
+
+    struct PI_Reg pi_speed;
+    struct PI_Reg pi_iMs;
+    struct PI_Reg pi_iTs;
+};
+#endif
+extern struct ControllerForExperiment CTRL;
 
 void CTRL_init();
 void control(double speed_cmd, double speed_cmd_dot);
