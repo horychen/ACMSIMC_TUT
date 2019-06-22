@@ -113,6 +113,7 @@ int main(){
 
     FILE *fw;
     fw = fopen("algorithm.dat", "w");
+    fprintf(fw, "x0,x1,x2,x3,x4\n");
 
     /* MAIN LOOP */
     clock_t  begin, end;
@@ -170,6 +171,7 @@ int main(){
 
 /* Utility */
 void write_data_to_file(FILE *fw){
+    static int bool_animate_on = false;
     static int j=0,jj=0; // j,jj for down sampling
 
     // if(CTRL.timebase>20)
@@ -181,6 +183,12 @@ void write_data_to_file(FILE *fw){
                 IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.x[4]
                 );
     }
+    }
+
+    if(bool_animate_on==false){
+        bool_animate_on = true;
+        printf("Start ACMAnimate\n");
+        system("start python ./ACMAnimate.py"); 
     }
 }
 

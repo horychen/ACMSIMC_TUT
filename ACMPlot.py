@@ -8,7 +8,10 @@ from collections import OrderedDict as O
 plt.style.use('ggplot') 
 # plt.style.use('grayscale') # print plt.style.available # get [u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
 # plot setting
+mpl.rcParams['legend.fontsize'] = 12
 mpl.rcParams['legend.fontsize'] = 14
+mpl.rcParams['font.family'] = ['Times New Roman']
+mpl.rcParams['font.size'] = 14
 # fontdict
 font = {'family' : 'Times New Roman', #'serif',
         'color' : 'darkblue',
@@ -39,7 +42,9 @@ ll = [  [],[],[],[],[],[],[],[],[],[],
 with open(f_name, mode='r') as f:
     buf = f.readlines()
     reader = csv.reader(buf)
-    for row in reader:
+    for idx, row in enumerate(reader):
+        if idx == 0:
+            continue
         # print (row)
         try:
             for ind, el in enumerate(row):
@@ -92,6 +97,7 @@ def plot_it(ax, ylabel, d):
 #################################
 # Automatic Code Generation
 time = arange(1,ll[0].__len__()+1,1) * 10/4000.000000
+print(time)
 # title: Observer
 ax_list = get_axis((1,3))
 plot_it(ax_list[0], r'$i_s$ [V]', O([
