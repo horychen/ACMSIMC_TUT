@@ -1,6 +1,4 @@
-#include "time.h"
 #include "ACMSim.h"
-#define VVVF_CONTROL true
 
 
 #if MACHINE_TYPE == INDUCTION_MACHINE
@@ -128,10 +126,12 @@ int machine_simulation(){
     IM.iqs = IM.x[1];
     IM.rpm = IM.x[4] * 60 / (2 * M_PI * IM.npp);
 
-    if(isNumber(IM.rpm))
+    if(isNumber(IM.rpm)){
         return false;
-    else
-        return true;
+    }else{
+        printf("IM.rpm is %g\n", IM.rpm);
+        return true;        
+    }
 }
 void measurement(){
     US_C(0) = CTRL.ual;
@@ -154,6 +154,8 @@ int main(){
     /* Initialization */
     Machine_init();
     CTRL_init();
+    im_init();
+    ob_init();
 
     FILE *fw;
     fw = fopen("algorithm.dat", "w");
@@ -167,8 +169,14 @@ int main(){
     for(_=0;_<NUMBER_OF_LINES;++_){
 
         /* Command and Load Torque */
-        IM.rpm_cmd = 50;
-        IM.Tload = 1;
+        if(CTRL.timebase>10){
+            IM.rpm_cmd = 250;
+        }else if(CTRL.timebase>5){
+            IM.Tload = 5;
+        }else{
+            IM.rpm_cmd = 50;
+            IM.Tload = 1;
+        }
 
         /* Simulated IM */
         if(machine_simulation()){ 
@@ -184,18 +192,18 @@ int main(){
 
             measurement();
 
-            // observation();
+            observation();
 
             write_data_to_file(fw);
 
-            #if VVVF_CONTROL == TRUE
+            #if CONTROL_STRATEGY == VVVF_CONTROL
                 #define VF_RATIO 18 //18.0 // 8 ~ 18 shows saturated phenomenon
                 double freq = 2; // 0.15 ~ 0.5 ~ 2 （0.1时电压李萨茹就变成一个圆了）
                 double volt = VF_RATIO*freq;
                 CTRL.ual = volt*cos(2*M_PI*freq*CTRL.timebase);
                 CTRL.ube = volt*sin(2*M_PI*freq*CTRL.timebase);
             #else
-                control();
+                control(IM.rpm_cmd, 0);
             #endif
         }
 
@@ -231,8 +239,10 @@ void write_data_to_file(FILE *fw){
         {
             j=0;
             #if MACHINE_TYPE == INDUCTION_MACHINE
-                fprintf(fw, "%g,%g,%g,%g,%g\n",
-                        IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.x[4]
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                        IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.rpm,
+                        CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.iMs_cmd, CTRL.iMs, CTRL.iTs_cmd, CTRL.iTs,
+                        ob.psi_mu_al, ob.tajima.omg*RAD_PER_SEC_2_RPM
                         );
             #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
                 fprintf(fw, "%g,%g,%g\n",
@@ -249,7 +259,7 @@ void write_data_to_file(FILE *fw){
     }
 }
 
-bool isNumber(double x){
+int isNumber(double x){
     // This looks like it should always be true, 
     // but it's false if x is a NaN (1.#QNAN0).
     return (x == x); 
