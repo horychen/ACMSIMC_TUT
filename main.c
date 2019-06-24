@@ -92,8 +92,8 @@ void rK5_dynamics(double t, double *x, double *fx){
 
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         // electromagnetic model
-        fx[0] = ACM.ud - ACM.R * x[0] + x[2]*ACM.Lq*x[1];
-        fx[1] = ACM.uq - ACM.R * x[1] - x[2]*ACM.Ld*x[0] - x[2]*ACM.KE;
+        fx[0] = (ACM.ud - ACM.R * x[0] + x[2]*ACM.Lq*x[1]) / ACM.Ld;
+        fx[1] = (ACM.uq - ACM.R * x[1] - x[2]*ACM.Ld*x[0] - x[2]*ACM.KE) / ACM.Lq;
 
         // mechanical model
         ACM.Tem = ACM.npp*(x[1]*ACM.KE + (ACM.Ld - ACM.Lq)*x[0]*x[1]);
@@ -102,30 +102,37 @@ void rK5_dynamics(double t, double *x, double *fx){
     #endif
 }
 void rK555_Lin(double t, double *x, double hs){
-    double k1[5], k2[5], k3[5], k4[5], xk[5];
-    double fx[5];
+    #if MACHINE_TYPE == INDUCTION_MACHINE
+        #define NUMBER_OF_STATES 6
+    #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+        #define NUMBER_OF_STATES 4
+    #endif
+    #define NS NUMBER_OF_STATES
+
+    double k1[NS], k2[NS], k3[NS], k4[NS], xk[NS];
+    double fx[NS];
     int i;
 
     rK5_dynamics(t, x, fx); // timer.t,
-    for(i=0;i<5;++i){        
+    for(i=0;i<NS;++i){        
         k1[i] = fx[i] * hs;
         xk[i] = x[i] + k1[i]*0.5;
     }
     
     rK5_dynamics(t, xk, fx); // timer.t+hs/2., 
-    for(i=0;i<5;++i){        
+    for(i=0;i<NS;++i){        
         k2[i] = fx[i] * hs;
         xk[i] = x[i] + k2[i]*0.5;
     }
     
     rK5_dynamics(t, xk, fx); // timer.t+hs/2., 
-    for(i=0;i<5;++i){        
+    for(i=0;i<NS;++i){        
         k3[i] = fx[i] * hs;
         xk[i] = x[i] + k3[i];
     }
     
     rK5_dynamics(t, xk, fx); // timer.t+hs, 
-    for(i=0;i<5;++i){        
+    for(i=0;i<NS;++i){        
         k4[i] = fx[i] * hs;
         x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0;
     }
@@ -173,7 +180,7 @@ void measurement(){
         IS_C(1) = ACM.ibe;
         im.omg = ACM.x[4];
         im.theta_r = ACM.x[5];
-    #else
+    #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         IS_C(0) = ACM.ial;
         IS_C(1) = ACM.ibe;
         sm.omg = ACM.x[2];
