@@ -92,8 +92,8 @@ void rK5_dynamics(double t, double *x, double *fx){
 
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         // electromagnetic model
-        fx[0] = (ACM.ud - ACM.R * x[0] + x[2]*ACM.Lq*x[1]) / ACM.Ld;
-        fx[1] = (ACM.uq - ACM.R * x[1] - x[2]*ACM.Ld*x[0] - x[2]*ACM.KE) / ACM.Lq;
+        fx[0] = (ACM.ud - ACM.R * x[0] + x[2]*ACM.Lq*x[1]) / ACM.Ld; // current-d
+        fx[1] = (ACM.uq - ACM.R * x[1] - x[2]*ACM.Ld*x[0] - x[2]*ACM.KE) / ACM.Lq; // current-q
 
         // mechanical model
         ACM.Tem = ACM.npp*(x[1]*ACM.KE + (ACM.Ld - ACM.Lq)*x[0]*x[1]);
@@ -142,9 +142,11 @@ int machine_simulation(){
 
     // API for explicit access
     #if MACHINE_TYPE == INDUCTION_MACHINE
-        ACM.ial = ACM.x[0];
-        ACM.ibe = ACM.x[1];
-        ACM.rpm = ACM.x[4] * 60 / (2 * M_PI * ACM.npp);
+        ACM.ial    = ACM.x[0];
+        ACM.ibe    = ACM.x[1];
+        ACM.psi_al = ACM.x[2];
+        ACM.psi_be = ACM.x[3];
+        ACM.rpm    = ACM.x[4] * 60 / (2 * M_PI * ACM.npp);
 
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         ACM.theta_d = ACM.x[3];
@@ -155,8 +157,8 @@ int machine_simulation(){
         }
         ACM.x[3] = ACM.theta_d;
 
-        ACM.id = ACM.x[0];
-        ACM.iq = ACM.x[1];
+        ACM.id  = ACM.x[0];
+        ACM.iq  = ACM.x[1];
         ACM.ial = MT2A(ACM.id, ACM.iq, cos(ACM.theta_d), sin(ACM.theta_d));
         ACM.ibe = MT2B(ACM.id, ACM.iq, cos(ACM.theta_d), sin(ACM.theta_d));
         ACM.rpm = ACM.x[2] * 60 / (2 * M_PI * ACM.npp);
@@ -220,14 +222,16 @@ int main(){
     for(_=0;_<NUMBER_OF_LINES;++_){
 
         /* Command and Load Torque */
-        if(CTRL.timebase>10){
-            ACM.rpm_cmd = 250;
-        }else if(CTRL.timebase>5){
-            ACM.Tload = 5;
-        }else{
-            ACM.rpm_cmd = 50;
-            ACM.Tload = 1;
-        }
+        // ACM.Tload = 0;
+        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        // if(CTRL.timebase>10){
+        //     ACM.rpm_cmd = -250;
+        // }else if(CTRL.timebase>5){
+        //     ACM.Tload = 5;
+        // }else{
+        //     ACM.rpm_cmd = -50;
+        //     ACM.Tload = 1;
+        // }
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -256,22 +260,32 @@ int main(){
     fclose(fw);
 
     /* Fade out */
-    // system("python ./ACMPlot.py"); 
+    system("python ./ACMPlot.py"); 
     // getch();
     // system("pause");
     // system("exit");
     return 0; 
 }
 
-
 /* Utility */
 void write_header_to_file(FILE *fw){
     #if MACHINE_TYPE == INDUCTION_MACHINE
-        fprintf(fw, "x0, x1, x2, x3, rpm, uMs_cmd, uTs_cmd, iMs_cmd, iMs, iTs_cmd, iTs, psi_mu_al, tajima_rpm\n");
-
+        // no space is allowed!
+        // fprintf(fw, "x0,x1,x2,x3,rpm,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs,psi_mu_al,tajima_rpm\n");
+        // fprintf(fw, "$x_0$,$x_1$,$x_2$,$x_3$,Speed [rpm],$u_{Ms}^*$,$u_{Ts}^*$,$i_{Ms}^*$,$i_{Ms}$,$i_{Ts}^*$,$i_{Ts}$,$\\psi_{\\alpha\\mu}$,tajima_rpm\n");
+        fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.Tem,CTRL.uMs_cmd,CTRL.uTs_cmd,CTRL.iMs_cmd,CTRL.iMs,CTRL.iTs_cmd,CTRL.iTs,ob.psi_mu_al,ob.tajima.omg*RAD_PER_SEC_2_RPM,ACM.rpm\n");
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
-        fprintf(fw, "x0,x1,x2,x3, uMs_cmd, uTs_cmd, iMs_cmd, iMs, iTs_cmd, iTs\n");
+        // no space is allowed!
+        fprintf(fw, "x0,x1,x2,x3,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs\n");
     #endif
+
+    {
+        FILE *fw2;
+        fw2 = fopen("info.dat", "w");
+        fprintf(fw2, "TS,DOWN_SAMPLE\n");
+        fprintf(fw2, "%g, %d\n", TS, DOWN_SAMPLE);
+        fclose(fw2);
+    }
 }
 void write_data_to_file(FILE *fw){
     static int bool_animate_on = false;
@@ -279,15 +293,15 @@ void write_data_to_file(FILE *fw){
 
     // if(CTRL.timebase>20)
     {
-        if(++j == 10)
+        if(++j == DOWN_SAMPLE)
         {
             j=0;
             #if MACHINE_TYPE == INDUCTION_MACHINE
                 // 数目必须对上，否则ACMAnimate会失效，但是不会影响ACMPlot
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-                        ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], ACM.rpm,
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                        ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], ACM.Tem, 
                         CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.iMs_cmd, CTRL.iMs, CTRL.iTs_cmd, CTRL.iTs,
-                        ob.psi_mu_al, ob.tajima.omg*RAD_PER_SEC_2_RPM
+                        ob.psi_mu_al, ob.tajima.omg*RAD_PER_SEC_2_RPM, ACM.rpm
                         );
             #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
                 fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
@@ -298,11 +312,11 @@ void write_data_to_file(FILE *fw){
         }
     }
 
-    if(bool_animate_on==false){
-        bool_animate_on = true;
-        printf("Start ACMAnimate\n");
-        system("start python ./ACMAnimate.py"); 
-    }
+    // if(bool_animate_on==false){
+    //     bool_animate_on = true;
+    //     printf("Start ACMAnimate\n");
+    //     system("start python ./ACMAnimate.py"); 
+    // }
 }
 
 int isNumber(double x){

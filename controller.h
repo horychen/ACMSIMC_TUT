@@ -118,4 +118,7 @@ extern struct ControllerForExperiment CTRL;
 void CTRL_init();
 void control(double speed_cmd, double speed_cmd_dot);
 
+
+void cmd_fast_speed_reversal(double timebase, double instant, double interval, double rpm_cmd);
+void cmd_slow_speed_reversal(double timebase, double instant, double interval, double rpm_cmd);
 #endif

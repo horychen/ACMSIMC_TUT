@@ -45,6 +45,7 @@
         double npp;
         double omg;
         double theta_r;
+        double theta_d;
     };
     extern struct InductionMachine im;
 

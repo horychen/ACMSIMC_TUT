@@ -152,8 +152,8 @@ void control(double speed_cmd, double speed_cmd_dot){
         // feedback field orientation
         double modulus = sqrt(CTRL.psi_mu_al_fb*CTRL.psi_mu_al_fb + CTRL.psi_mu_be_fb*CTRL.psi_mu_be_fb);
         if(modulus<1e-3){
-            CTRL.cosT = 0;
-            CTRL.sinT = 1;
+            CTRL.cosT = 1;
+            CTRL.sinT = 0;
         }else{
             CTRL.cosT = CTRL.psi_mu_al / modulus;
             CTRL.sinT = CTRL.psi_mu_be / modulus;
@@ -168,7 +168,8 @@ void control(double speed_cmd, double speed_cmd_dot){
             CTRL.theta_M += 2*M_PI; // 反转！
         }
 
-        CTRL.omega_sl = CTRL.rreq*CTRL.iTs_cmd / CTRL.rotor_flux_cmd;
+        // CTRL.omega_sl = CTRL.rreq*CTRL.iTs_cmd / CTRL.rotor_flux_cmd;
+        CTRL.omega_sl = CTRL.rreq*CTRL.iTs / CTRL.rotor_flux_cmd;
         CTRL.omega_syn = CTRL.omg_fb + CTRL.omega_sl;
 
         CTRL.cosT = cos(CTRL.theta_M); 
@@ -185,8 +186,17 @@ void control(double speed_cmd, double speed_cmd_dot){
     vT = - PI(&CTRL.pi_iTs, CTRL.iTs-CTRL.iTs_cmd);
 
     // Current loop decoupling (skipped, see Chen.Huang-Stable)
-    CTRL.uMs_cmd = vM;
-    CTRL.uTs_cmd = vT;
+    {   // Steady state dynamics based decoupling circuits for current regulation
+        #if VOLTAGE_CURRENT_DECOUPLING_CIRCUIT == TRUE
+            CTRL.uMs_cmd = vM + (CTRL.Lsigma)         *(-CTRL.omega_syn*CTRL.iTs); // Telford03/04
+            CTRL.uTs_cmd = vT + CTRL.omega_syn*(CTRL.rotor_flux_cmd + CTRL.Lsigma*CTRL.iMs); // 这个行，但是无速度运行时，会导致M轴电流在转速暂态高频震荡。
+            // CTRL.uMs_cmd = vM;
+            // CTRL.uTs_cmd = vT;
+        #else
+            CTRL.uMs_cmd = vM;
+            CTRL.uTs_cmd = vT;
+        #endif
+    }
 
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
@@ -324,3 +334,17 @@ void control(double speed_cmd, double speed_cmd_dot){
 }
 
 #endif
+
+
+
+/* Command */
+void cmd_fast_speed_reversal(double timebase, double instant, double interval, double rpm_cmd){
+    if(timebase > instant+2*interval){
+        ACM.rpm_cmd = rpm_cmd;
+    }else if(timebase > instant+interval){
+        ACM.rpm_cmd = -rpm_cmd;
+    }else if(timebase > instant){
+        ACM.rpm_cmd = rpm_cmd;
+    }
+}
+

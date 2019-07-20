@@ -3,7 +3,7 @@
 
 #define INDUCTION_MACHINE 1
 #define SYNCHRONOUS_MACHINE 2
-#define MACHINE_TYPE SYNCHRONOUS_MACHINE
+#define MACHINE_TYPE INDUCTION_MACHINE
 
 /* standard lib */
 #include <stdio.h> // printf #include <stdbool.h> // bool for _Bool and true for 1
@@ -20,7 +20,8 @@
     #define DFOC 2
     #define CONTROL_STRATEGY IFOC
 
-    #define SENSORLESS_CONTROL true
+    #define SENSORLESS_CONTROL false
+    #define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT true
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
     #define NULL_D_AXIS_CURRENT_CONTROL -1
@@ -39,7 +40,7 @@
 #define DOWN_FREQ_EXE_INVERSE 0.5
 #define TS (MACHINE_TS*DOWN_FREQ_EXE) //2.5e-4 
 #define TS_INVERSE (MACHINE_TS_INVERSE*DOWN_FREQ_EXE_INVERSE) // 4000
-
+#define DOWN_SAMPLE 5 // 10
 
 /* Macro for Part Transformation*/
 #define AB2M(A, B, COS, SIN)  ( (A)*COS  + (B)*SIN )
@@ -98,6 +99,8 @@ struct InductionMachineSimulated{
 
     double ial;
     double ibe;
+    double psi_al;
+    double psi_be;
 
     double ual;
     double ube;
@@ -145,6 +148,7 @@ extern struct SynchronousMachineSimulated ACM;
 
 #include "controller.h"
 #include "observer.h"
+// #include "utility.h"
 
 /* Declaration of Utility Function */
 void write_header_to_file(FILE *fw);
