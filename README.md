@@ -8,7 +8,7 @@ The numerical integration method is currently RK4, which is quite enough.
 DoPri54 will be included in future version.
 
 **Introduction on current branches:**
-- [IM] master: vvvf branch plus other utility features.
+- [IM & PMSM] master: the branch with full feature.
 - [IM] vvvf: the skeleton with induction motor simulation and VVVF control.
 - [IM] foc: field oriented control (direct/indirect) with basic sensorless control.
 - [IM] animate: test the feature of waveform animation.
