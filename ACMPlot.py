@@ -1,70 +1,42 @@
 #coding:u8
-from pylab import plt, mpl, arange, show
+from pylab import plt, mpl, np
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 # from pprint import pprint
 from collections import OrderedDict as O
+import pandas as pd
 # plot style
-plt.style.use('ggplot') 
-# plt.style.use('grayscale') # print plt.style.available # get [u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
+plt.style.use('ggplot')
+# plt.style.use('grayscale') 
+# print(plt.style.available) # get [u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
 # plot setting
-mpl.rcParams['legend.fontsize'] = 12
-mpl.rcParams['legend.fontsize'] = 14
+# mpl.style.use('classic')
+mpl.rcParams['mathtext.fontset'] = 'stix'
+mpl.rcParams['font.family'] = 'STIXGeneral'
+mpl.rcParams['legend.fontsize'] = 12.5
+# mpl.rcParams['legend.family'] = 'Times New Roman'
 mpl.rcParams['font.family'] = ['Times New Roman']
-mpl.rcParams['font.size'] = 14
-# fontdict
+mpl.rcParams['font.size'] = 14.0
 font = {'family' : 'Times New Roman', #'serif',
         'color' : 'darkblue',
         'weight' : 'normal',
         'size' : 14,}
+textfont = {'family' : 'Times New Roman', #'serif',
+            'color' : 'darkblue',
+            'weight' : 'normal',
+            'size' : 11.5,}
 
+df_profiles = pd.read_csv(r"./algorithm.dat", na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
+df_info = pd.read_csv(r"./info.dat", na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
 
-######################
-# Read in Data
-import csv
-
-try:
-    f_name = './algorithm.dat'
-    with open(f_name, mode='r') as f:
-        print('found '+f_name)
-except:
-    f_name = '../algorithm.dat'    
-print('[Python] Read in data...')
-ll = [  [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[],
-        [],[],[],[],[],[],[],[],[],[]]
-with open(f_name, mode='r') as f:
-    buf = f.readlines()
-    reader = csv.reader(buf)
-    for idx, row in enumerate(reader):
-        if idx == 0:
-            continue
-        # print (row)
-        try:
-            for ind, el in enumerate(row):
-                ll[ind].append(float(el))
-        except:
-            break
-
-
-for ind, l in enumerate(ll):
-    # print len(l)
-    if l==[]:
-        ll_len = ind
-        break
-print('\tQuantities amount:', ll_len)
-print('\tData Length:', ll[0].__len__())
-
+no_samples = df_profiles.shape[0]
+no_traces  = df_profiles.shape[1]
+print(df_info, 'Simulated time: %g s.'%(no_samples * df_info['TS'].values[0] * df_info['DOWN_SAMPLE'].values[0]), 'Key list:', sep='\n')
+for key in df_profiles.keys():
+    print('\t', key)
 
 ######################
 # Plotting
-
 def get_axis(cNr):
     # fig, axes = plt.subplots(ncols=cNr[0], nrows=cNr[1], dpi=150, sharex=True);
     fig, axes = plt.subplots(ncols=cNr[0], nrows=cNr[1], sharex=True, figsize=(16*0.8, 9*0.8), dpi=80, facecolor='w', edgecolor='k');
@@ -74,6 +46,10 @@ def get_axis(cNr):
         return axes
     else:
         return axes.ravel()
+
+def plot_key(ax, key, df):
+    ax.plot(time, df[key].values, '-', lw=1)
+    ax.set_ylabel(key, fontdict=font)
 
 def plot_it(ax, ylabel, d):
     count = 0
@@ -92,30 +68,18 @@ def plot_it(ax, ylabel, d):
     # ax.set_xlim(0,35) # shared x
     # ax.set_ylim(0.85,1.45)
 
+time = np.arange(1, no_samples+1) * df_info['DOWN_SAMPLE'].values[0] * df_info['TS'].values[0]
 
+ax_list = []
+for i in range(0, no_traces, 5):
+    ax_list += list(get_axis((1,5)))
 
-#################################
-# Automatic Code Generation
-time = arange(1,ll[0].__len__()+1,1) * 10/4000.000000
-print(time)
-# title: Observer
-ax_list = get_axis((1,3))
-plot_it(ax_list[0], r'$i_s$ [V]', O([
-                                             (r'0',   ll[0]),  
-                                             (r'1',   ll[1]),  
-                                             ]))
-plot_it(ax_list[1], r'$\psi_\mu$ [A]', O([
-                                             (r'0',   ll[2]),  
-                                             (r'1',   ll[3]),  
-                                             ]))
-plot_it(ax_list[2], r'speed [rpm]', O([
-                                             (r'0',   ll[4]),  
-                                             ]))
-# Automatic END
-show()
-# savefig(r'C:/Dr.H/(0) GET WORKING/05 3ph 3paramsId/3ph_TDDA_TEX/pic/'+where[:-1], dpi=300)
-
-
-
+for idx, key in enumerate(df_profiles.keys()):
+    plot_it(ax_list[idx], key, O([
+                                    (str(idx), df_profiles[key]),  
+                                    # (str(idx), df_profiles[key]),  
+                                    ]))
+plt.show()
+quit()
 
 
