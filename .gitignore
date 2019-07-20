@@ -1,7 +1,4 @@
 *.exe
 *.dat
-/__pycache__
-<<<<<<< HEAD
-=======
 *.pyc
->>>>>>> mras
+/__pycache__
