@@ -13,6 +13,7 @@ DoPri54 will be included in future version.
 - [IM] foc: field oriented control (direct/indirect) with basic sensorless control.
 - [IM] animate: test the feature of waveform animation.
 - [PMSM] pmsm: id=0 control for interior permanent magnet synchronous motor.
+- [IM] vi_decouple: add voltage-current decoupling circuit for improved control performance during high speed reversal.
 - [IM] mras: model reference adaptive system based sensorless control (my 2017-Chen.Huang-Online paper).
 
 > If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
