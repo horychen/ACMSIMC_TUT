@@ -71,8 +71,8 @@ def plot_it(ax, ylabel, d):
 time = np.arange(1, no_samples+1) * df_info['DOWN_SAMPLE'].values[0] * df_info['TS'].values[0]
 
 ax_list = []
-for i in range(0, no_traces, 5):
-    ax_list += list(get_axis((1,5)))
+for i in range(0, no_traces, 6):
+    ax_list += list(get_axis((1,6)))
 
 for idx, key in enumerate(df_profiles.keys()):
     plot_it(ax_list[idx], key, O([

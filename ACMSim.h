@@ -20,7 +20,7 @@
     #define DFOC 2
     #define CONTROL_STRATEGY IFOC
 
-    #define SENSORLESS_CONTROL false
+    #define SENSORLESS_CONTROL true
     #define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT true
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE

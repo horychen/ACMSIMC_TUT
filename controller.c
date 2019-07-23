@@ -168,8 +168,11 @@ void control(double speed_cmd, double speed_cmd_dot){
             CTRL.theta_M += 2*M_PI; // 反转！
         }
 
-        // CTRL.omega_sl = CTRL.rreq*CTRL.iTs_cmd / CTRL.rotor_flux_cmd;
-        CTRL.omega_sl = CTRL.rreq*CTRL.iTs / CTRL.rotor_flux_cmd;
+        #if VOLTAGE_CURRENT_DECOUPLING_CIRCUIT
+            CTRL.omega_sl = CTRL.rreq*CTRL.iTs / CTRL.rotor_flux_cmd;
+        #else
+            CTRL.omega_sl = CTRL.rreq*CTRL.iTs_cmd / CTRL.rotor_flux_cmd;
+        #endif
         CTRL.omega_syn = CTRL.omg_fb + CTRL.omega_sl;
 
         CTRL.cosT = cos(CTRL.theta_M); 
