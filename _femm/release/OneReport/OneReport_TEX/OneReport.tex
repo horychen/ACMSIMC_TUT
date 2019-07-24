@@ -1,0 +1,127 @@
+\documentclass[]{interact}
+\usepackage{epstopdf}% To incorporate .eps illustrations using PDFLaTeX, etc.
+\usepackage[caption=false]{subfig}% Support for small, `sub' figures and tables
+\usepackage{makecell} % for new line in table
+\renewcommand\theadalign{bc}
+\renewcommand\theadfont{\bfseries}
+\renewcommand\theadgape{\Gape[4pt]}
+\renewcommand\cellgape{\Gape[4pt]}
+\begin{document}
+\articletype{RESEARCH REPORT}% Specify the article type or omit as appropriate
+\title{Bearingless Induction Motor Design}
+\author{
+\name{Jiahao Chen\textsuperscript{a}\thanks{CONTACT Jiahao Chen by email: horychen@qq.com} }
+\affil{\textsuperscript{a}WEMPEC, 1415 Engineering Dr., Madison, WI, USA}}
+\maketitle
+\begin{abstract}
+  This is a automatically generated report.
+\end{abstract}
+\begin{keywords}
+Bearingless motors, induction motors.
+\end{keywords}
+%\tableofcontents
+
+\section{Design for Bearingless Induction Motor}
+
+%We use full pitch winding here, but we skew the rotor for one rotor slot pitch. %(4.77), skew_s = slot_pitch_tau_u
+
+\subsection{Design Procedure by Pyrhonen}
+\input{./contents/pyrhonen_procedure_s01}
+\input{./contents/pyrhonen_procedure_s02}
+\input{./contents/pyrhonen_procedure_s03}
+\input{./contents/pyrhonen_procedure_s04}
+\input{./contents/pyrhonen_procedure_s05}
+\input{./contents/pyrhonen_procedure_s06}
+\input{./contents/pyrhonen_procedure_s07}
+\input{./contents/pyrhonen_procedure_s08}
+\input{./contents/pyrhonen_procedure_s09}
+\input{./contents/pyrhonen_procedure_s10}
+\input{./contents/pyrhonen_procedure_s11}
+\input{./contents/pyrhonen_procedure_s12}
+\input{./contents/pyrhonen_procedure_s13}
+\begin{table}[!t]
+  \caption{Permitted flux densities of the magnetic circuit for $50$ Hz induction machines \cite[Table6.1]{2009-Pyrhonen.Jokinen.ea-Book-Designrotatingelectrical}}    % title of Table
+  \centering                % used for centering the whole table
+    \begin{tabular}{cc}
+        % after \\: \hline or \cline{col1-col2} \cline{col3-col4} ...
+        \hline
+        \hline
+        Location & Flux Density \\
+        \hline
+        Air gap      & $\hat B_{\delta}=0.7 \sim  0.9$ T.   \\
+        Stator yoke  & $\hat B_{ys}=1.4\sim 1.7$ T.   \\
+        Rotor yoke   & $\hat B_{yr}=1.0\sim 1.6$ T.   \\
+        Stator tooth  & $\hat B_{ds}=1.4\sim 2.1$ T.   \\
+        Rotor tooth   & $\hat B_{dr}=1.5\sim 2.2$ T.   \\
+        \hline
+    \end{tabular}
+  \label{tab:6.1}      % is used to refer this table in the text
+\end{table}
+\begin{table}[!t]
+  \caption{Correction coefficients kFe,n for the definition of iron losses for sinusoidal supply induction machines \cite[Table3.2]{2009-Pyrhonen.Jokinen.ea-Book-Designrotatingelectrical}}    % title of Table
+  \centering                % used for centering the whole table
+    \begin{tabular}{cc}
+        % after \\: \hline or \cline{col1-col2} \cline{col3-col4} ...
+        \hline
+        \hline
+        Location & Correction coefficient $k_{{\rm Fe},n}$ \\
+        \hline
+        Tooth  & $1.8$   \\
+        Yoke   & $1.5\sim 1.7$   \\
+        \hline
+    \end{tabular}
+  \label{tab:3.2}      % is used to refer this table in the text
+\end{table}
+\input{./contents/pyrhonen_procedure_s14}
+\input{./contents/pyrhonen_procedure_s15}
+\input{./contents/pyrhonen_procedure_s16}
+\input{./contents/pyrhonen_procedure_s17}
+
+\subsubsection{Mechanical Limits Check}
+This has been down in Sec. \ref{subsubsec:machine_sizing}.
+\[\begin{array}{l}
+{\sigma _{yield}} = C'\rho r_r^2{\Omega ^2}\\
+C' = \frac{{3 + 0.29}}{4}\\
+{r_{r,\max }} = \sqrt {\frac{{{\sigma _{yield}}}}{{C'\rho {\Omega ^2}}}} \\
+l_{\max }^2 = {n^2}\frac{{{\pi ^2}}}{{k\Omega }}\sqrt {\frac{{EI}}{{\rho S}}}
+\end{array}\]
+%\subsection{The selection of rotor shape}
+%Suggested by Gerada11, we will have a drop shape rotor slots.
+%%转子齿宽和转子槽数的关系。
+%%转子齿宽由齿部磁密最大值来确定。齿宽确定后，转子槽宽也相继确定。然后，根据转子导条的电密来确定，槽的高度。
+%%所以，如果发现转子槽很窄长，说明设定的转子槽数可能过多了。
+%\section{Constraints}
+%Qs != Qr
+%\section{Other Suggestions}
+%A special tooth design is shown in Figure 3.6(c) to reduce the flux tip at slot opening so as to reduce losses.
+
+
+%\input{./contents/pyrhonen_procedure_s20}
+
+%
+%\begin{table*}[!t]
+%  \caption{Statistical data of the 50 random designs from Fig.~\ref{fig:05}.}
+%  \centering
+%    \begin{tabular}{cccccc}
+%        \hline
+%        \hline
+%        \thead{FEA model\\w/ regular step} &
+%        \thead{Torque diff.\\\relax[p.u.]} &
+%        \thead{Torque ripple\\\relax diff. [\%]} &
+%        \thead{Force mag.\\\relax diff. [p.u.]} &
+%        \thead{Force err. mag.\\\relax diff. [\%]} &
+%        \thead{Force err. angle\\\relax diff. [deg]} \\
+%        \hline
+%        Tran. w/ 2 Sections   & $-0.042(9.7\times10^{-5})^*$ & $4.8(24)$   & $0.0068(0.001)$ & $-1(4.2)$ & $-0.52(1.3)$ \\
+%        Eddy Current FEA      & $0.023(5.1\times10^{-4})$    & $-6.4(50)$ & $0.09(0.035)$   & $-10(150)$ & $-6.1(75)$ \\
+%        Static FEA            & $-0.008(2.4\times10^{-4})$   & $-1.7(22)$  & $-0.01(0.0042)$ & $6.1(39)$  & $4.9(51)$ \\
+%        \hline
+%        \vspace{-2.5ex}
+%        \\
+%        \multicolumn{6}{l}{*Note: all statistical data are in the format of ``mean(variance)''. The FEA model is better if its data are closer to 0.}
+%    \end{tabular}
+%  \label{tab:002}      % is used to refer this table in the text
+%  \vspace{-3ex}
+%\end{table*}
+
+\end{document}

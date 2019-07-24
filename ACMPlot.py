@@ -6,17 +6,15 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from collections import OrderedDict as O
 import pandas as pd
 # plot style
-plt.style.use('ggplot')
-# plt.style.use('grayscale') 
-# print(plt.style.available) # get [u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
+style = np.random.choice(plt.style.available); print(style); plt.style.use(style) # [u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
 # plot setting
-# mpl.style.use('classic')
 mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 mpl.rcParams['legend.fontsize'] = 12.5
 # mpl.rcParams['legend.family'] = 'Times New Roman'
 mpl.rcParams['font.family'] = ['Times New Roman']
 mpl.rcParams['font.size'] = 14.0
+# mpl.style.use('classic')
 font = {'family' : 'Times New Roman', #'serif',
         'color' : 'darkblue',
         'weight' : 'normal',

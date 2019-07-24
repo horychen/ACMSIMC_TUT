@@ -15,6 +15,7 @@ DoPri54 will be included in future version.
 - [PMSM] pmsm: id=0 control for interior permanent magnet synchronous motor.
 - [IM] vi_decouple: add voltage-current decoupling circuit for improved control performance during high speed reversal.
 - [IM] mras: model reference adaptive system based sensorless control (my 2017-Chen.Huang-Online paper).
+- [IM] \_femm: (This branch does not really belong here but I don't want to create a new repository for it...) It is about the design of the induction motor using free softwares as well as fitting the design to the equivalent circuit parameters for further control simulation.
 
 > If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
 > Please take a look at this link to [知乎](https://zhuanlan.zhihu.com/p/64445558).
