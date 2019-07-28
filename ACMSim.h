@@ -18,10 +18,14 @@
     #define VVVF_CONTROL 0
     #define IFOC 1
     #define DFOC 2
-    #define CONTROL_STRATEGY IFOC
+    #define CONTROL_STRATEGY DFOC
 
-    #define SENSORLESS_CONTROL false
-    #define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT true
+    #define TAJIMA96 0 
+    #define TOTALLY_ADAPTIVE_OBSERVER 1 // Flux-MRAS
+    #define OBSERVER_APPLIED TOTALLY_ADAPTIVE_OBSERVER 
+ 
+    #define SENSORLESS_CONTROL true
+    #define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT false
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
     #define NULL_D_AXIS_CURRENT_CONTROL -1
@@ -148,6 +152,7 @@ extern struct SynchronousMachineSimulated ACM;
 
 #include "controller.h"
 #include "observer.h"
+#include "Add_TAAO.h"
 // #include "utility.h"
 
 /* Declaration of Utility Function */

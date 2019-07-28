@@ -105,9 +105,11 @@ void control(double speed_cmd, double speed_cmd_dot){
 
     // Input 1 is feedback: estimated speed or measured speed
     #if SENSORLESS_CONTROL
-        CTRL.omg_fb    = ob.tajima.omg;
-        CTRL.omega_syn = ob.tajima.omega_syn;
-        CTRL.omega_sl  = ob.tajima.omega_sl;
+        CTRL.omg_fb = OB_OMG;
+        // #if OBSERVER_APPLIED == TAJIMA96
+        //     CTRL.omega_syn = ob.tajima.omega_syn;
+        //     CTRL.omega_sl  = ob.tajima.omega_sl;
+        // #endif
     #else
         CTRL.omg_fb = im.omg;
     #endif
@@ -117,16 +119,16 @@ void control(double speed_cmd, double speed_cmd_dot){
     // Input 3 differs for DFOC and IFOC
     #if CONTROL_STRATEGY == DFOC
         // DFOC: estimated flux components in alpha-beta frame
-        CTRL.psi_mu_al_fb = ob.psi_mu_al;
-        CTRL.psi_mu_be_fb = ob.psi_mu_be;
+        CTRL.psi_mu_al_fb = OB_FLUX(0);
+        CTRL.psi_mu_be_fb = OB_FLUX(1);
     #elif CONTROL_STRATEGY == IFOC
         // IFOC: estimated rotor resistance
-        CTRL.rreq = ob.rreq;
+        CTRL.rreq = OB_RREQ;
     #else
     #endif
 
     // Flux (linkage) command
-    CTRL.rotor_flux_cmd = 0.5; // f(speed, dc bus voltage, last torque current command)
+    CTRL.rotor_flux_cmd = 1.3; // f(speed, dc bus voltage, last torque current command)
         // 1. speed is compared with the base speed to decide flux weakening or not
         // 2. dc bus voltage is required for certain application
         // 3. last torque current command is required for loss minimization
@@ -155,8 +157,8 @@ void control(double speed_cmd, double speed_cmd_dot){
             CTRL.cosT = 1;
             CTRL.sinT = 0;
         }else{
-            CTRL.cosT = CTRL.psi_mu_al / modulus;
-            CTRL.sinT = CTRL.psi_mu_be / modulus;
+            CTRL.cosT = CTRL.psi_mu_al_fb / modulus;
+            CTRL.sinT = CTRL.psi_mu_be_fb / modulus;
         }
     #elif CONTROL_STRATEGY == IFOC
         // Feed-forward field orientation

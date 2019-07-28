@@ -2,7 +2,7 @@
 #define ADD_OBSERVER_H
 
 
-#if MACHINE_TYPE == INDUCTION_MACHINE
+#if MACHINE_TYPE == INDUCTION_MACHINE && OBSERVER_APPLIED == TAJIMA96 
     #define M1 0
     #define OMG1 2
 
@@ -13,6 +13,10 @@
     #define IS_C(X) im.is_curr[X]
     #define US_P(X) im.us_prev[X]
     #define IS_P(X) im.is_prev[X]
+
+    #define OB_RREQ ob.rreq
+    #define OB_OMG ob.tajima.omg
+    #define OB_FLUX(X) ob.psi_mu_al[X]
 
     struct Tajima{ 
         double K_PEM;

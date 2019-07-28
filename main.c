@@ -1,6 +1,5 @@
 #include "ACMSim.h"
 
-
 #if MACHINE_TYPE == INDUCTION_MACHINE
 struct InductionMachineSimulated ACM;
 void Machine_init(){
@@ -223,7 +222,7 @@ int main(){
 
         /* Command and Load Torque */
         // ACM.Tload = 0;
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 500); // timebase, instant, interval, rpm_cmd
         // if(CTRL.timebase>10){
         //     ACM.rpm_cmd = -250;
         // }else if(CTRL.timebase>5){
@@ -301,7 +300,7 @@ void write_data_to_file(FILE *fw){
                 fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                         ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], ACM.x[4], ACM.Tem, 
                         CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.iMs_cmd, CTRL.iMs, CTRL.iTs_cmd, CTRL.iTs,
-                        ob.psi_mu_al, ob.tajima.omg*RAD_PER_SEC_2_RPM, ACM.rpm
+                        OB_FLUX(0), OB_OMG*RAD_PER_SEC_2_RPM, ACM.rpm
                         );
             #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
                 fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",

@@ -1,6 +1,7 @@
 #include "ACMSim.h"
 
-#if MACHINE_TYPE == INDUCTION_MACHINE
+#if MACHINE_TYPE == INDUCTION_MACHINE && OBSERVER_APPLIED == TAJIMA96 
+
 struct InductionMachine im;
 struct Observer ob;
 void acm_init(){
@@ -56,10 +57,8 @@ void observation(){
     uTs_cmd  = CTRL.uTs_cmd;
 
     // Speed estimation: Tajima1996
-        ob.tajima.K_PEM = 2; // 0.1 ~ 2
+        ob.tajima.K_PEM = 0.1; // 0.1 ~ 2
         ob.tajima.omega_syn  = (uTs_cmd - ob.rs*iTs) / (rotor_flux_cmd + ob.Lsigma*iMs);
-        // int i;
-        // for(i=0;i<100;++i)
         {
             ob.tajima.e_M        = uMs_cmd - ob.rs*iMs + ob.tajima.omega_syn*ob.Lsigma*iTs;
             ob.tajima.omega_syn -= ob.tajima.K_PEM * ob.tajima.e_M;
@@ -81,6 +80,7 @@ void observation(){
 
     // Flux estimation 2: Current model (this is a bad flux estimator)    
 }
+
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
 struct SynchronousMachine sm;
