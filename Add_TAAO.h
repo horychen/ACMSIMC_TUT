@@ -13,13 +13,13 @@
 #ifndef ADD_TAAO_H 
 #define ADD_TAAO_H 
 #if OBSERVER_APPLIED == TOTALLY_ADAPTIVE_OBSERVER 
- 
+
  
 #define TAAO_FLUX_COMMAND_VALUE (1.2) // 1.2 
 #define TAAO_FLUX_COMMAND_ON (false) 
 #define TIME_DIVISION_MULTIPLEXING (false) 
  
-#define KVM_VALUE (300) // (100) 
+#define KVM_VALUE (700) // (100) 
 #define KMEC_VALUE (0) 
 
 /* 第三轮调试（无速度传感器运行、供稿IEMDC） 
@@ -33,7 +33,7 @@
  
 /* 四参数辨识（有偏） */ 
 #define GROUP_M 0*0.7 
-#define GROUP_T 10
+#define GROUP_T 20
 #define GAMMA_LSIGMA 0.0 //0.1 //0.5 
 #define GAMMA_RS     0*200 //(GROUP_M+0*GROUP_T)*(215) // rs小12.26~12.275大rs@TL=6Nm, //13.5@TL=20Nm //1.5 //2.5 // 5  
 #define GAMMA_LEQ    0*GROUP_M*2.5*10*1e1 //13 for only Leq Id. // 10, 14.01~15就太快了，（加入饱和特性后）转速暂态时导致系统不稳定！是在150rpm下不稳定，用gamma4=14.01可以体现出来，14.00也不行。 

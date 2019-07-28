@@ -91,9 +91,6 @@ void rK_fourteenth(double hs){
     x_temp[8]  = ob.taao_rreq      +   xx1[8]*0.5; 
     x_temp[9]  = ob.taao_Leq       +   xx1[9]*0.5; 
     x_temp[10] = ob.taao_omg_integralPart + xx1[10]*0.5; 
-    x_temp[11] = ob.varPi          +   xx1[11]*0.5; 
-    x_temp[12] = ob.taao_invJs     +   xx1[12]*0.5; 
-    x_temp[13] = ob.taao_TLslashJs +   xx1[13]*0.5; 
  
     // time instant t+hs/2 
     IS(0) = 0.5*(IS_P(0)+IS_C(0)); 
@@ -110,9 +107,6 @@ void rK_fourteenth(double hs){
     x_temp[8]  = ob.taao_rreq      +   xx2[8]*0.5; 
     x_temp[9]  = ob.taao_Leq       +   xx2[9]*0.5; 
     x_temp[10] = ob.taao_omg_integralPart + xx2[10]*0.5; 
-    x_temp[11] = ob.varPi          +   xx2[11]*0.5; 
-    x_temp[12] = ob.taao_invJs     +   xx2[12]*0.5; 
-    x_temp[13] = ob.taao_TLslashJs +   xx2[13]*0.5; 
  
     // time instant t+hs/2 
     rhs_func_14th( xx3, p_x_temp, p_x_temp+2, p_x_temp+4, 
@@ -127,9 +121,6 @@ void rK_fourteenth(double hs){
     x_temp[8]  = ob.taao_rreq      +   xx3[8]; 
     x_temp[9]  = ob.taao_Leq       +   xx3[9]; 
     x_temp[10] = ob.taao_omg_integralPart + xx3[10]; 
-    x_temp[11] = ob.varPi          +   xx3[11]; 
-    x_temp[12] = ob.taao_invJs     +   xx3[12]; 
-    x_temp[13] = ob.taao_TLslashJs +   xx3[13]; 
  
     // time instant t+hs 
     IS(0) = IS_C(0); 
@@ -148,9 +139,6 @@ void rK_fourteenth(double hs){
     ob.taao_rreq     +=   (xx1[8] + 2*(xx2[8] + xx3[8]) + xx4[8])*0.166666666666667; // 8 
     ob.taao_Leq      +=   (xx1[9] + 2*(xx2[9] + xx3[9]) + xx4[9])*0.166666666666667; // 9 
     ob.taao_omg_integralPart +=   (xx1[10] + 2*(xx2[10] + xx3[10]) + xx4[10])*0.166666666666667; // 10 
-    ob.varPi                 +=   (xx1[11] + 2*(xx2[11] + xx3[11]) + xx4[11])*0.166666666666667; // 11 
-    ob.taao_invJs            +=   (xx1[12] + 2*(xx2[12] + xx3[12]) + xx4[12])*0.166666666666667; // 12 
-    ob.taao_TLslashJs        +=   (xx1[13] + 2*(xx2[13] + xx3[13]) + xx4[13])*0.166666666666667; // 13 
  
     // 限幅 
     if(ob.taao_Leq<0.2){ 
@@ -169,14 +157,6 @@ void rK_fourteenth(double hs){
 /* Main Flow of Observer 
  * */ 
 void observation(){ 
-
-    // if(ob.timebase>10 && ob.timebase<12.5){
-    //     // Regeneration mode
-    //     ob.k_VM = 10;
-    // }else{
-    //     // Motoring operation
-    //     ob.k_VM = KVM_VALUE;
-    // }
 
     /* OBSERVATION */ 
     if(ob.gamma5==0){ 

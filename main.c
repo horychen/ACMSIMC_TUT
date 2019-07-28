@@ -1,5 +1,12 @@
 #include "ACMSim.h"
 
+double sign(double x){
+    return (x > 0) - (x < 0);    
+}
+double fabs(double x){
+    return (x >= 0) ? x : -x;
+}
+
 #if MACHINE_TYPE == INDUCTION_MACHINE
 struct InductionMachineSimulated ACM;
 void Machine_init(){
@@ -221,8 +228,8 @@ int main(){
     for(_=0;_<NUMBER_OF_LINES;++_){
 
         /* Command and Load Torque */
-        // ACM.Tload = 0;
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 500); // timebase, instant, interval, rpm_cmd
+        ACM.Tload = 1 * sign(ACM.rpm); 
+        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // if(CTRL.timebase>10){
         //     ACM.rpm_cmd = -250;
         // }else if(CTRL.timebase>5){
