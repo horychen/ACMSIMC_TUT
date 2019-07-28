@@ -228,7 +228,7 @@ int main(){
     for(_=0;_<NUMBER_OF_LINES;++_){
 
         /* Command and Load Torque */
-        ACM.Tload = 1 * sign(ACM.rpm); 
+        ACM.Tload = 5 * sign(ACM.rpm); 
         cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // if(CTRL.timebase>10){
         //     ACM.rpm_cmd = -250;
