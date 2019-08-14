@@ -27,6 +27,9 @@
     #define SENSORLESS_CONTROL true
     #define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT false
 
+    #define SATURATED_MAGNETIC_CIRCUIT true
+    #define INVERTER_NONLINEARITY false
+
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
     #define NULL_D_AXIS_CURRENT_CONTROL -1
     #define MTPA -2 // not supported
@@ -81,71 +84,104 @@
 
 
 #if MACHINE_TYPE == INDUCTION_MACHINE
-struct InductionMachineSimulated{
-    double x[13]; ////////////////////////////////
-    double rpm;
-    double rpm_cmd;
-    double rpm_deriv_cmd;
-    double Tload;
-    double Tem;
+    struct InductionMachineSimulated{
+        double ial;
+        double ibe;
+        double psi_al;
+        double psi_be;
 
-    double Lsigma;
-    double rs;
-    double rreq;
-    double Lmu;
-    double Lmu_inv;
-    double alpha;
+        double ual;
+        double ube;
 
-    double Js;
-    double npp;
-    double mu_m;
-    double Ts;
+        double x[13]; ////////////////////////////////
+        double rpm;
+        double rpm_cmd;
+        double rpm_deriv_cmd;
+        double Tload;
+        double Tem;
 
-    double ial;
-    double ibe;
-    double psi_al;
-    double psi_be;
+        double Js;
+        double npp;
+        double mu_m;
+        double Ts;
 
-    double ual;
-    double ube;
-};
-extern struct InductionMachineSimulated ACM;
+        double Lsigma;
+        double rs;
+        double rreq;
+        double Lmu;
+        double Lmu_inv;
+        double alpha;
+
+        double Lm;
+        double rr;
+        double Lls;
+        double Llr;
+        double Lm_slash_Lr;
+        double Lr_slash_Lm;
+
+        double LSigmal;
+
+        double izq;
+        double izd;
+        double iz;
+        
+        double psimq;
+        double psimd;
+        double psim;
+        double im;
+
+        double iqs;
+        double ids;
+        double iqr;
+        double idr;
+
+        double ual_c_dist;
+        double ube_c_dist;
+        double dist_al;
+        double dist_be;
+    };
+    extern struct InductionMachineSimulated ACM;
+
+    #define UAL_C_DIST ACM.ual_c_dist // alpha-component of the distorted phase voltage = sine voltage + distored component
+    #define UBE_C_DIST ACM.ube_c_dist
+    #define DIST_AL ACM.dist_al // alpha-component of the distorted component of the voltage
+    #define DIST_BE ACM.dist_be
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
-struct SynchronousMachineSimulated{
-    double x[5];
-    double rpm;
-    double rpm_cmd;
-    double rpm_deriv_cmd;
-    double Tload;
-    double Tem;
+    struct SynchronousMachineSimulated{
+        double x[5];
+        double rpm;
+        double rpm_cmd;
+        double rpm_deriv_cmd;
+        double Tload;
+        double Tem;
 
-    double R;
-    double Ld;
-    double Lq;
-    double KE;
-    double L0;
-    double L1;
+        double R;
+        double Ld;
+        double Lq;
+        double KE;
+        double L0;
+        double L1;
 
-    double Js;
-    double npp;
-    double mu_m;
-    double Ts;
+        double Js;
+        double npp;
+        double mu_m;
+        double Ts;
 
-    double id;
-    double iq;
+        double id;
+        double iq;
 
-    double ial;
-    double ibe;
+        double ial;
+        double ibe;
 
-    double ud;
-    double uq;
+        double ud;
+        double uq;
 
-    double ual;
-    double ube;
+        double ual;
+        double ube;
 
-    double theta_d;
-};
+        double theta_d;
+    };
 extern struct SynchronousMachineSimulated ACM;
 #endif
 
@@ -154,6 +190,9 @@ extern struct SynchronousMachineSimulated ACM;
 #include "observer.h"
 #include "Add_TAAO.h"
 // #include "utility.h"
+
+// saturation
+#include "satlut.h"
 
 /* Declaration of Utility Function */
 void write_header_to_file(FILE *fw);
