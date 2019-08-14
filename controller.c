@@ -128,7 +128,8 @@ void control(double speed_cmd, double speed_cmd_dot){
     #endif
 
     // Flux (linkage) command
-    CTRL.rotor_flux_cmd = 1.3; // f(speed, dc bus voltage, last torque current command)
+    CTRL.rotor_flux_cmd = 1.5; // f(speed, dc bus voltage, last torque current command)
+    // CTRL.rotor_flux_cmd = 3;
         // 1. speed is compared with the base speed to decide flux weakening or not
         // 2. dc bus voltage is required for certain application
         // 3. last torque current command is required for loss minimization
@@ -136,8 +137,6 @@ void control(double speed_cmd, double speed_cmd_dot){
     // M-axis current command
     CTRL.iMs_cmd = CTRL.rotor_flux_cmd*CTRL.Lmu_inv + M1*OMG1*cos(OMG1*CTRL.timebase) / CTRL.rreq;
     // printf("%g, %g, %g\n", CTRL.Lmu_inv, CTRL.iMs_cmd, CTRL.iTs_cmd);
-
-
 
     // T-axis current command
     static int vc_count = 0;
@@ -175,6 +174,7 @@ void control(double speed_cmd, double speed_cmd_dot){
         #else
             CTRL.omega_sl = CTRL.rreq*CTRL.iTs_cmd / CTRL.rotor_flux_cmd;
         #endif
+
         CTRL.omega_syn = CTRL.omg_fb + CTRL.omega_sl;
 
         CTRL.cosT = cos(CTRL.theta_M); 
@@ -206,6 +206,9 @@ void control(double speed_cmd, double speed_cmd_dot){
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
     CTRL.ube = MT2B(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
+
+    CTRL.ual = CTRL.timebase*20;
+    CTRL.ube = 0;
 }
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
@@ -268,7 +271,7 @@ void CTRL_init(){
     CTRL.pi_iMs.Ti = 0.08;
     CTRL.pi_iMs.Ki = CTRL.pi_iMs.Kp/CTRL.pi_iMs.Ti*TS; // =0.025
     CTRL.pi_iMs.i_state = 0.0;
-    CTRL.pi_iMs.i_limit = 350; //350.0; // unit: Volt
+    CTRL.pi_iMs.i_limit = 650; //350.0; // unit: Volt
 
     CTRL.pi_iTs.Kp = 15;
     CTRL.pi_iTs.Ti = 0.08;

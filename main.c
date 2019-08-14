@@ -114,6 +114,7 @@ void collectCurrents(double *x){
             {
                 ACM.Lm = ACM.psim/ACM.im;
                 ACM.Lmu = ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Llr);
+                ACM.Lmu_inv = 1.0/ACM.Lmu;
                 ACM.alpha = ACM.rr/(ACM.Lm+ACM.Llr);
                 ACM.rreq = ACM.Lmu*ACM.alpha;
                 ACM.Lsigma = (ACM.Lls+ACM.Lm) - ACM.Lmu;
@@ -268,17 +269,17 @@ int machine_simulation(){
 
     // API for explicit access
     #if MACHINE_TYPE == INDUCTION_MACHINE
-        // rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
-        // ACM.ial    = ACM.x[0]; // rK555_Lin
-        // ACM.ibe    = ACM.x[1]; // rK555_Lin
-        // ACM.psi_al = ACM.x[2]; // rK555_Lin
-        // ACM.psi_be = ACM.x[3]; // rK555_Lin
+        rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
+        ACM.ial    = ACM.x[0]; // rK555_Lin
+        ACM.ibe    = ACM.x[1]; // rK555_Lin
+        ACM.psi_al = ACM.x[2]; // rK555_Lin
+        ACM.psi_be = ACM.x[3]; // rK555_Lin
 
-        rK555_Sat(CTRL.timebase, ACM.x, ACM.Ts);
-        ACM.ial    = ACM.ids; // rK555_Sat
-        ACM.ibe    = ACM.iqs; // rK555_Sat
-        ACM.psi_al = ACM.x[2]*ACM.Lm_slash_Lr; // rK555_Sat
-        ACM.psi_be = ACM.x[3]*ACM.Lm_slash_Lr; // rK555_Sat
+        // rK555_Sat(CTRL.timebase, ACM.x, ACM.Ts);
+        // ACM.ial    = ACM.ids; // rK555_Sat
+        // ACM.ibe    = ACM.iqs; // rK555_Sat
+        // ACM.psi_al = ACM.x[2]*ACM.Lm_slash_Lr; // rK555_Sat
+        // ACM.psi_be = ACM.x[3]*ACM.Lm_slash_Lr; // rK555_Sat
 
         ACM.rpm    = ACM.x[4] * 60 / (2 * M_PI * ACM.npp);
 
@@ -359,7 +360,9 @@ int main(){
 
         /* Command and Load Torque */
         ACM.Tload = 5 * sign(ACM.rpm); 
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
+
         // if(CTRL.timebase>10){
         //     ACM.rpm_cmd = -250;
         // }else if(CTRL.timebase>5){
