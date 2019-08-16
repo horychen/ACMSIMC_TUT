@@ -8,81 +8,201 @@ double fabs(double x){
 }
 
 #if MACHINE_TYPE == INDUCTION_MACHINE
-struct InductionMachineSimulated ACM;
-void Machine_init(){
-    int i;
-    for(i=0;i<5;++i){
-        ACM.x[i] = 0.0;
+    struct InductionMachineSimulated ACM;
+    void Machine_init(){
+        int i;
+        for(i=0;i<5;++i){
+            ACM.x[i] = 0.0;
+        }
+        ACM.rpm = 0.0;
+        ACM.rpm_cmd = 0.0;
+        ACM.rpm_deriv_cmd = 0.0;
+        ACM.Tload = 0.0;
+        ACM.Tem = 0.0;
+
+        ACM.Lmu    = 0.4482;
+            // Those parameters are introduced since branch saturation
+            ACM.Lls = 0.0126;
+            ACM.Llr = 0.0126;
+            ACM.Lm  = 0.5*(ACM.Lmu + sqrt(ACM.Lmu*ACM.Lmu + 4*ACM.Llr*ACM.Lmu));
+            ACM.Lm_slash_Lr = ACM.Lm/(ACM.Lm+ACM.Llr);
+            ACM.Lr_slash_Lm = (ACM.Lm+ACM.Llr)/ACM.Lm; // i_dreq = ACM.idr*ACM.Lr_slash_Lm
+            ACM.LSigmal = 1.0 / (1.0 / ACM.Lls + 1.0 / ACM.Llr);
+        ACM.Lsigma = ACM.Lm + ACM.Lls - ACM.Lmu; // = Ls * (1.0 - Lm*Lm/Ls/Lr);
+        printf("Validate: %g = %g?\n", ACM.Lsigma, (ACM.Lm+ACM.Lls) * (1.0 - ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls)/(ACM.Lm+ACM.Llr)) );
+
+        ACM.rreq   = 1.69;
+        ACM.rs     = 3.04;
+            ACM.rr = ACM.rreq * ACM.Lr_slash_Lm*ACM.Lr_slash_Lm;
+
+        ACM.alpha  = ACM.rreq / (ACM.Lmu);
+        ACM.Lmu_inv= 1.0/ACM.Lmu;
+
+        ACM.Js = 0.0636; // Awaya92 using im.omg
+        ACM.npp = 2;
+        ACM.mu_m = ACM.npp/ACM.Js;
+
+        ACM.Ts  = MACHINE_TS;
+
+        ACM.ial = 0.0;
+        ACM.ibe = 0.0;
+
+        ACM.ual = 0.0;
+        ACM.ube = 0.0;
+
+            // Those variables are introduced since branch saturation
+            ACM.iqs = 0.0;
+            ACM.ids = 0.0;
+            ACM.iqr = 0.0;
+            ACM.idr = 0.0;
+            ACM.psimq = 0.0;
+            ACM.psimd = 0.0;
     }
-    ACM.rpm = 0.0;
-    ACM.rpm_cmd = 0.0;
-    ACM.rpm_deriv_cmd = 0.0;
-    ACM.Tload = 0.0;
-    ACM.Tem = 0.0;
-
-    ACM.Lmu    = 0.4482;
-    ACM.Lsigma = 0.0126;
-
-    ACM.rreq   = 1.69;
-    ACM.rs     = 3.04;
-
-    ACM.alpha  = ACM.rreq / (ACM.Lmu);
-    ACM.Lmu_inv= 1.0/ACM.Lmu;
-
-    ACM.Js = 0.0636; // Awaya92 using im.omg
-    ACM.npp = 2;
-    ACM.mu_m = ACM.npp/ACM.Js;
-
-    ACM.Ts  = MACHINE_TS;
-
-    ACM.ial = 0.0;
-    ACM.ibe = 0.0;
-
-    ACM.ual = 0.0;
-    ACM.ube = 0.0;
-}
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
-struct SynchronousMachineSimulated ACM;
-void Machine_init(){
-    int i;
-    for(i=0;i<5;++i){
-        ACM.x[i] = 0.0;
+    struct SynchronousMachineSimulated ACM;
+    void Machine_init(){
+        int i;
+        for(i=0;i<5;++i){
+            ACM.x[i] = 0.0;
+        }
+        ACM.rpm = 0.0;
+        ACM.rpm_cmd = 0.0;
+        ACM.rpm_deriv_cmd = 0.0;
+        ACM.Tload = 0.0;
+        ACM.Tem = 0.0;
+
+        ACM.R  = 0.45;
+        ACM.Ld = 4.15*1e-3;
+        ACM.Lq = 16.74*1e-3;
+        ACM.KE = 0.504; // Vs/rad
+        ACM.L0 = 0.5*(ACM.Ld + ACM.Lq);
+        ACM.L1 = 0.5*(ACM.Ld - ACM.Lq);
+
+        ACM.Js = 0.06; // Awaya92 using ACM.omg
+        ACM.npp = 2;
+        ACM.mu_m = ACM.npp/ACM.Js;
+
+        ACM.Ts  = MACHINE_TS;
+
+        ACM.id = 0.0;
+        ACM.iq = 0.0;
+
+        ACM.ial = 0.0;
+        ACM.ibe = 0.0;
+
+        ACM.ud = 0.0;
+        ACM.uq = 0.0;
+
+        ACM.ual = 0.0;
+        ACM.ube = 0.0;
+
+        ACM.theta_d = 0.0;
     }
-    ACM.rpm = 0.0;
-    ACM.rpm_cmd = 0.0;
-    ACM.rpm_deriv_cmd = 0.0;
-    ACM.Tload = 0.0;
-    ACM.Tem = 0.0;
-
-    ACM.R  = 0.45;
-    ACM.Ld = 4.15*1e-3;
-    ACM.Lq = 16.74*1e-3;
-    ACM.KE = 0.504; // Vs/rad
-    ACM.L0 = 0.5*(ACM.Ld + ACM.Lq);
-    ACM.L1 = 0.5*(ACM.Ld - ACM.Lq);
-
-    ACM.Js = 0.06; // Awaya92 using ACM.omg
-    ACM.npp = 2;
-    ACM.mu_m = ACM.npp/ACM.Js;
-
-    ACM.Ts  = MACHINE_TS;
-
-    ACM.id = 0.0;
-    ACM.iq = 0.0;
-
-    ACM.ial = 0.0;
-    ACM.ibe = 0.0;
-
-    ACM.ud = 0.0;
-    ACM.uq = 0.0;
-
-    ACM.ual = 0.0;
-    ACM.ube = 0.0;
-
-    ACM.theta_d = 0.0;
-}
 #endif
 
+/* Saturation Model */
+void collectCurrents(double *x){
+    // Generalised Current by Therrien2013
+    ACM.izq = x[1]/ACM.Lls + x[3]/ACM.Llr;
+    ACM.izd = x[0]/ACM.Lls + x[2]/ACM.Llr;
+    ACM.iz = sqrt(ACM.izd*ACM.izd + ACM.izq*ACM.izq);
+
+    if(ACM.iz>1e-8){
+        #if SATURATED_MAGNETIC_CIRCUIT
+            ACM.psim = sat_lookup(ACM.iz, satLUT);
+            ACM.im = ACM.iz - ACM.psim/ACM.LSigmal;
+            {
+                ACM.Lm = ACM.psim/ACM.im;
+                ACM.Lmu = ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Llr);
+                ACM.Lmu_inv = 1.0/ACM.Lmu;
+                ACM.alpha = ACM.rr/(ACM.Lm+ACM.Llr);
+                ACM.rreq = ACM.Lmu*ACM.alpha;
+                ACM.Lsigma = (ACM.Lls+ACM.Lm) - ACM.Lmu;
+                ACM.Lm_slash_Lr = ACM.Lm/(ACM.Lm+ACM.Llr);
+                ACM.Lr_slash_Lm = (ACM.Lm+ACM.Llr)/ACM.Lm;
+            }
+        #else
+            ACM.psim = 1.0/(1.0/ACM.Lm+1.0/ACM.Lls+1.0/ACM.Llr)*ACM.iz;
+        #endif
+
+        ACM.psimq = ACM.psim/ACM.iz*ACM.izq;
+        ACM.psimd = ACM.psim/ACM.iz*ACM.izd;
+    }else{
+        printf("how to handle zero iz?\n");
+        ACM.psimq = 0;
+        ACM.psimd = 0;
+    }
+
+    ACM.iqs = (x[1] - ACM.psimq) / ACM.Lls;
+    ACM.ids = (x[0] - ACM.psimd) / ACM.Lls;
+    ACM.iqr = (x[3] - ACM.psimq) / ACM.Llr;
+    ACM.idr = (x[2] - ACM.psimd) / ACM.Llr;    
+
+    // /* Direct compute is ir from psis psir */
+    // ACM.iqs = (x[1] - (ACM.Lm/(ACM.Lm+ACM.Llr))*x[3])/ACM.Lsigma;
+    // ACM.ids = (x[0] - (ACM.Lm/(ACM.Lm+ACM.Llr))*x[2])/ACM.Lsigma;
+    // ACM.iqr = (x[3] - (ACM.Lm/(ACM.Lm+ACM.Lls))*x[1])/(ACM.Lm+ACM.Llr-ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls));
+    // ACM.idr = (x[2] - (ACM.Lm/(ACM.Lm+ACM.Lls))*x[0])/(ACM.Lm+ACM.Llr-ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls));
+}
+void rK5_satDynamics(double t, double *x, double *fx){
+    /* argument t is omitted*/
+
+    /* STEP ZERO: collect all the currents: is, ir, iz */
+    collectCurrents(x);
+
+    /* STEP ONE: Inverter Nonlinearity - now it is voltages' turn */
+    #if INVERTER_NONLINEARITY
+        printf("Not implemented\n");
+    #else
+        UAL_C_DIST = ACM.ual;
+        UBE_C_DIST = ACM.ube;  
+    #endif
+
+    /* STEP TWO: electromagnetic model with full flux states in alpha-beta frame */
+    fx[1] = UBE_C_DIST - ACM.rs*ACM.iqs; // 这里是反过来的！Q轴在前面！
+    fx[0] = UAL_C_DIST - ACM.rs*ACM.ids;
+    fx[3] =            - ACM.rr*ACM.iqr + x[4]*x[2]; // 这里是反过来的！Q轴在前面！
+    fx[2] =            - ACM.rr*ACM.idr - x[4]*x[3];
+
+    /* STEP THREE: mechanical model */
+    // ACM.Tem = ACM.npp*(ACM.Lm/(ACM.Lm+ACM.Llr))*(ACM.iqs*x[2]-ACM.ids*x[3]); // this is not better 
+    ACM.Tem = ACM.npp*(ACM.iqs*x[0]-ACM.ids*x[1]);
+    fx[4] = (ACM.Tem - ACM.Tload)*ACM.mu_m;
+}
+double one_over_six = 1.0/6.0;
+void rK555_Sat(double t, double *x, double hs){
+    double k1[5], k2[5], k3[5], k4[5], xk[5];
+    double fx[5];
+    int i;
+
+    rK5_satDynamics(t, x, fx); // timer.t,
+    for(i=0;i<5;++i){        
+        k1[i] = fx[i] * hs;
+        xk[i] = x[i] + k1[i]*0.5;
+    }
+    
+    rK5_satDynamics(t, xk, fx); // timer.t+hs/2., 
+    for(i=0;i<5;++i){        
+        k2[i] = fx[i] * hs;
+        xk[i] = x[i] + k2[i]*0.5;
+    }
+    
+    rK5_satDynamics(t, xk, fx); // timer.t+hs/2., 
+    for(i=0;i<5;++i){        
+        k3[i] = fx[i] * hs;
+        xk[i] = x[i] + k3[i];
+    }
+    
+    rK5_satDynamics(t, xk, fx); // timer.t+hs, 
+    for(i=0;i<5;++i){        
+        k4[i] = fx[i] * hs;
+        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])*one_over_six;
+    }
+    
+    collectCurrents(x);
+}
+
+/* Simple Model */
 void rK5_dynamics(double t, double *x, double *fx){
     #if MACHINE_TYPE == INDUCTION_MACHINE
         // electromagnetic model
@@ -143,18 +263,29 @@ void rK555_Lin(double t, double *x, double hs){
         x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0;
     }
 }
+
+
 int machine_simulation(){
-    rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
 
     // API for explicit access
     #if MACHINE_TYPE == INDUCTION_MACHINE
-        ACM.ial    = ACM.x[0];
-        ACM.ibe    = ACM.x[1];
-        ACM.psi_al = ACM.x[2];
-        ACM.psi_be = ACM.x[3];
+        rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
+        ACM.ial    = ACM.x[0]; // rK555_Lin
+        ACM.ibe    = ACM.x[1]; // rK555_Lin
+        ACM.psi_al = ACM.x[2]; // rK555_Lin
+        ACM.psi_be = ACM.x[3]; // rK555_Lin
+
+        // rK555_Sat(CTRL.timebase, ACM.x, ACM.Ts);
+        // ACM.ial    = ACM.ids; // rK555_Sat
+        // ACM.ibe    = ACM.iqs; // rK555_Sat
+        // ACM.psi_al = ACM.x[2]*ACM.Lm_slash_Lr; // rK555_Sat
+        // ACM.psi_be = ACM.x[3]*ACM.Lm_slash_Lr; // rK555_Sat
+
         ACM.rpm    = ACM.x[4] * 60 / (2 * M_PI * ACM.npp);
 
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
+        rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
+
         ACM.theta_d = ACM.x[3];
         if(ACM.theta_d > M_PI){
             ACM.theta_d -= 2*M_PI;
@@ -229,7 +360,9 @@ int main(){
 
         /* Command and Load Torque */
         ACM.Tload = 5 * sign(ACM.rpm); 
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
+
         // if(CTRL.timebase>10){
         //     ACM.rpm_cmd = -250;
         // }else if(CTRL.timebase>5){
