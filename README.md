@@ -4,6 +4,7 @@
 ## Introduction
 I have used C to simulate motor control and adptive observers for over 4 years now.
 This is a tutorial for those who hate using Simulink to simulate ac motor control.
+The benefit is that you can direct reuse the codes in DSP based motor drive.
 
 ## Numerial Methods
 The numerical integration method is currently RK4, which is quite enough. 
@@ -17,6 +18,8 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [PMSM] pmsm: id=0 control for interior permanent magnet synchronous motor.
 - [IM] vi_decouple: add voltage-current decoupling circuit for improved control performance during high speed reversal.
 - [IM] mras: model reference adaptive system based sensorless control (my 2017-Chen.Huang-Online paper).
+- [IM] \_femm: (This branch does not really belong here but I don't want to create a new repository for it...) It is about the design of the induction motor using free softwares as well as fitting the design to the equivalent circuit parameters for further control simulation.
+- [IM] saturation: include iron core saturation effect into the induction motor model simulation.
 
 ## Dependency under Windows
 - Anaconda 3 (you should be able to call python from cmd.exe)
@@ -25,11 +28,12 @@ DoPri54 will be included in future version (including stiffness detection and va
   - PyFEMM (use pip to install this)
 
 ## Dependency under Linux
-- Not tested yet. (I believe that linux users should be able to figure it out...)
+- FEMM is a Windows-only fEA software.
+- Others are not tested yet. (Linux users should be able to figure it out...)
 
 ## Video Tutorials
-For unfamiliated users, I have been creating video tutorials. However, they are currently in Chinese. 
-In near future, tge Engligh version will be produced.
+For unfamiliar users, I have been creating video tutorials. However, they are currently in Chinese. 
+In near future, tge Engligh version will be brought about.
 
 > If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
 > Please take a look at this link to [知乎](https://zhuanlan.zhihu.com/p/64445558).
