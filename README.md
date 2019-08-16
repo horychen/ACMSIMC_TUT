@@ -24,11 +24,12 @@ DoPri54 will be included in future version (including stiffness detection and va
 ## Dependency under Windows
 - Anaconda 3 (you should be able to call python from cmd.exe)
 - MinGW (you should be able to call gcc from cmd.exe)
-- FEMM (femm.info, you do not need this if you are not interested in Finite Element Analysis and motor design)
-  - PyFEMM (use pip to install this)
+- FEMM ([femm.info](http://www.femm.info/wiki/HomePage), you do not need this if you are not interested in Finite Element Analysis and motor design)
+  - PyFEMM (a wrapper for FEMM API; use pip to install this)
 
 ## Dependency under Linux
-- FEMM is a Windows-only fEA software.
+- FEMM is a Windows-only FEA software. 
+    - Alternative is ElmerFEM for Linux, but it is poorly documented. Please DO NOT try it out unless you are a ドM.
 - Others are not tested yet. (Linux users should be able to figure it out...)
 
 ## Video Tutorials
