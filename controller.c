@@ -100,7 +100,7 @@ void control(double speed_cmd, double speed_cmd_dot){
         double volt = VF_RATIO*freq;
         CTRL.ual = volt*cos(2*M_PI*freq*CTRL.timebase);
         CTRL.ube = volt*sin(2*M_PI*freq*CTRL.timebase);
-        return 
+        return;
     #endif
 
     // Input 1 is feedback: estimated speed or measured speed
@@ -206,9 +206,6 @@ void control(double speed_cmd, double speed_cmd_dot){
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
     CTRL.ube = MT2B(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
-
-    CTRL.ual = CTRL.timebase*20;
-    CTRL.ube = 0;
 }
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE

@@ -18,17 +18,17 @@
     #define VVVF_CONTROL 0
     #define IFOC 1
     #define DFOC 2
-    #define CONTROL_STRATEGY DFOC
+    #define CONTROL_STRATEGY IFOC
 
     #define TAJIMA96 0 
     #define TOTALLY_ADAPTIVE_OBSERVER 1 // Flux-MRAS
-    #define OBSERVER_APPLIED TOTALLY_ADAPTIVE_OBSERVER 
- 
+    #define OBSERVER_APPLIED 0
+
     #define SENSORLESS_CONTROL false
     #define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT false
 
     #define SATURATED_MAGNETIC_CIRCUIT true
-    #define INVERTER_NONLINEARITY false
+    #define INVERTER_NONLINEARITY true
 
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
     #define NULL_D_AXIS_CURRENT_CONTROL -1
@@ -47,14 +47,18 @@
 #define DOWN_FREQ_EXE_INVERSE 0.5
 #define TS (MACHINE_TS*DOWN_FREQ_EXE) //2.5e-4 
 #define TS_INVERSE (MACHINE_TS_INVERSE*DOWN_FREQ_EXE_INVERSE) // 4000
-#define DOWN_SAMPLE 5 // 10
+#define DOWN_SAMPLE 1 // 5 // 10
 
-/* Macro for Part Transformation*/
+/* Macro for Part transformation*/
 #define AB2M(A, B, COS, SIN)  ( (A)*COS  + (B)*SIN )
 #define AB2T(A, B, COS, SIN)  ( (A)*-SIN + (B)*COS )
 #define MT2A(M, T, COS, SIN)  ( (M)*COS - (T)*SIN )
 #define MT2B(M, T, COS, SIN)  ( (M)*SIN + (T)*COS )
 
+// Macro for Power-invariant inverse Clarke transformation
+#define AB2U(A, B) ( 0.816496580927726 * ( A ) )
+#define AB2V(A, B) ( 0.816496580927726 * ( A*-0.5 + B*0.8660254037844387 ) )
+#define AB2W(A, B) ( 0.816496580927726 * ( A*-0.5 + B*-0.8660254037844385 ) )
 
 /* General Constants */
 #define TRUE True
@@ -182,7 +186,7 @@
 
         double theta_d;
     };
-extern struct SynchronousMachineSimulated ACM;
+    extern struct SynchronousMachineSimulated ACM;
 #endif
 
 
@@ -190,12 +194,17 @@ extern struct SynchronousMachineSimulated ACM;
 #include "observer.h"
 #include "Add_TAAO.h"
 // #include "utility.h"
+#include "inverter.h"
+
 
 // saturation
 #include "satlut.h"
+#define ACMSIMC_DEBUG false
 
 /* Declaration of Utility Function */
 void write_header_to_file(FILE *fw);
 void write_data_to_file(FILE *fw);
 int isNumber(double x);
+double sign(double x);
+double fabs(double x);
 #endif
