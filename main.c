@@ -215,7 +215,6 @@ void rK5_dynamics(double t, double *x, double *fx){
         ACM.Tem = ACM.npp*(x[1]*x[2]-x[0]*x[3]);
         fx[4] = (ACM.Tem - ACM.Tload)*ACM.mu_m; // elec. angular rotor speed
         fx[5] = x[4];                           // elec. angular rotor position
-
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         // electromagnetic model
         fx[0] = (ACM.ud - ACM.R * x[0] + x[2]*ACM.Lq*x[1]) / ACM.Ld; // current-d
@@ -269,17 +268,17 @@ int machine_simulation(){
 
     // API for explicit access
     #if MACHINE_TYPE == INDUCTION_MACHINE
-        rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
-        ACM.ial    = ACM.x[0]; // rK555_Lin
-        ACM.ibe    = ACM.x[1]; // rK555_Lin
-        ACM.psi_al = ACM.x[2]; // rK555_Lin
-        ACM.psi_be = ACM.x[3]; // rK555_Lin
+        // rK555_Lin(CTRL.timebase, ACM.x, ACM.Ts);
+        // ACM.ial    = ACM.x[0]; // rK555_Lin
+        // ACM.ibe    = ACM.x[1]; // rK555_Lin
+        // ACM.psi_al = ACM.x[2]; // rK555_Lin
+        // ACM.psi_be = ACM.x[3]; // rK555_Lin
 
-        // rK555_Sat(CTRL.timebase, ACM.x, ACM.Ts);
-        // ACM.ial    = ACM.ids; // rK555_Sat
-        // ACM.ibe    = ACM.iqs; // rK555_Sat
-        // ACM.psi_al = ACM.x[2]*ACM.Lm_slash_Lr; // rK555_Sat
-        // ACM.psi_be = ACM.x[3]*ACM.Lm_slash_Lr; // rK555_Sat
+        rK555_Sat(CTRL.timebase, ACM.x, ACM.Ts);
+        ACM.ial    = ACM.ids; // rK555_Sat
+        ACM.ibe    = ACM.iqs; // rK555_Sat
+        ACM.psi_al = ACM.x[2]*ACM.Lm_slash_Lr; // rK555_Sat
+        ACM.psi_be = ACM.x[3]*ACM.Lm_slash_Lr; // rK555_Sat
 
         ACM.rpm    = ACM.x[4] * 60 / (2 * M_PI * ACM.npp);
 
@@ -338,7 +337,78 @@ void inverter_model(){
         ACM.uq = AB2T(ACM.ual, ACM.ube, cos(ACM.theta_d), sin(ACM.theta_d));
     #endif
 }
+double v_by_f;
+double v_by_f_prev = 0.0;
+double volt = 0.0;
+FILE *f_noload;
+
+#define FREQUENCY 60
+double freq = FREQUENCY;
+
+#define MA_SEQUENCE_LENGTH 133 // ((int)(1.0/(MACHINE_TS*FREQUENCY)))
+double uMA_array[MA_SEQUENCE_LENGTH];
+double uMA_sum;
+unsigned int uCursor;
+double iMA_array[MA_SEQUENCE_LENGTH];
+double iMA_sum;
+unsigned int iCursor;
+double powerMA_array[MA_SEQUENCE_LENGTH];
+double powerMA_sum;
+unsigned int powerCursor;
+double MA_Update(double input, double *p_MA_array, double *p_MA_sum, unsigned int *p_cursor){
+    #define MA_array p_MA_array
+    #define MA_sum (*p_MA_sum)
+    #define cursor (*p_cursor)
+
+    // what position in the MA queue you are in?
+    MA_sum -= MA_array[cursor];
+    MA_sum += input;
+    MA_array[cursor] = input;
+    cursor += 1; // 完事以后再加一
+    if(cursor >= MA_SEQUENCE_LENGTH){
+        cursor=0; // Reset the cursor
+    }
+
+    double output;
+    // output = MA_sum * FREQUENCY; // ouptut the average value over the period
+    output = MA_sum;
+
+    #undef MA_array
+    #undef MA_sum
+    #undef cursor
+    return output;
+}
+void MA_Init(double *p_MA_array, double *p_MA_sum, unsigned int *p_cursor){
+    #define MA_array p_MA_array
+    #define MA_sum (*p_MA_sum)
+    #define cursor (*p_cursor)
+
+    int i;
+    for(i=0;i<MA_SEQUENCE_LENGTH;++i){
+        MA_array[i] = 0.0;
+    }
+    MA_sum = 0.0;
+    cursor = 0;
+
+    #undef MA_array
+    #undef MA_sum
+    #undef cursor
+}
+
+// Power-invariant inverse Clarke transformation
+#define AB2U(A, B) ( 0.816496580927726 * ( A ) )
+#define AB2V(A, B) ( 0.816496580927726 * ( A*-0.5 + B*0.8660254037844387 ) )
+#define AB2W(A, B) ( 0.816496580927726 * ( A*-0.5 + B*-0.8660254037844385 ) )
+double volt_U;
+double volt_V;
+double volt_W;
+double curr_U;
+double curr_V;
+double curr_W;
+
 int main(){
+    f_noload = fopen("noload.dat", "w");
+
     printf("NUMBER_OF_LINES: %d\n\n", NUMBER_OF_LINES);
 
     /* Initialization */
@@ -346,6 +416,10 @@ int main(){
     CTRL_init();
     acm_init();
     ob_init();
+
+    MA_Init(uMA_array, &uMA_sum, &uCursor);
+    MA_Init(iMA_array, &iMA_sum, &iCursor);
+    MA_Init(powerMA_array, &powerMA_sum, &powerCursor);
 
     FILE *fw;
     fw = fopen("algorithm.dat", "w");
@@ -359,18 +433,12 @@ int main(){
     for(_=0;_<NUMBER_OF_LINES;++_){
 
         /* Command and Load Torque */
-        ACM.Tload = 5 * sign(ACM.rpm); 
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
+        // ACM.Tload = 5 * sign(ACM.rpm); 
 
-        // if(CTRL.timebase>10){
-        //     ACM.rpm_cmd = -250;
-        // }else if(CTRL.timebase>5){
-        //     ACM.Tload = 5;
-        // }else{
-        //     ACM.rpm_cmd = -50;
-        //     ACM.Tload = 1;
-        // }
+        ACM.Tload = 0 * sign(ACM.rpm); // No-load test
+        // ACM.Tload = ACM.Tem; // Blocked-rotor test
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -386,17 +454,51 @@ int main(){
 
             measurement();
 
-            observation();
+            // observation();
 
             write_data_to_file(fw);
 
-            control(ACM.rpm_cmd, 0);
+            // control(ACM.rpm_cmd, 0);
         }
+
+        // pretend to be a variac (自耦变压器)
+        // #define VF_RATIO (sqrt(2)*480/sqrt(3) * sqrt(3.0/2.0) / 60.0)
+        #define VF_RATIO (sqrt(2)*380/sqrt(3) * sqrt(3.0/2.0) / 50.0)
+        #define VF_RATIO_STEP 0.1
+        #define BIAS_TIME_FOR_TRANSIENT 1.0 // sec
+        // v_by_f = 1.25 * VF_RATIO;
+        v_by_f = VF_RATIO * VF_RATIO_STEP * (int)((100-CTRL.timebase)/5.0);
+
+        double avg_volt, avg_curr, avg_power;
+        avg_volt  = MA_Update(CTRL.ual, uMA_array, &uMA_sum, &uCursor) / MA_SEQUENCE_LENGTH;
+        avg_curr  = MA_Update(ACM.ids, iMA_array, &iMA_sum, &iCursor) / MA_SEQUENCE_LENGTH;
+        avg_power = MA_Update(CTRL.ual*ACM.ids, powerMA_array, &powerMA_sum, &powerCursor) / MA_SEQUENCE_LENGTH;
+        if(fabs(v_by_f - v_by_f_prev) > 1e-2){
+
+            // 根据频率和采样频率确定数组大小，在这里结算有功功率和无功功率。
+            printf("\t%g %g %g\n", avg_volt, avg_curr, avg_power);
+            printf("%.1f Hz\t%2.2f Vs\t%.2f V\t%.2f V\t%.2f A\t%.2f W\n", freq, v_by_f_prev, volt, sqrt(CTRL.ual*CTRL.ual + CTRL.ube*CTRL.ube), sqrt(ACM.ids*ACM.ids + ACM.iqs*ACM.iqs), CTRL.ual*ACM.ids+CTRL.ube*ACM.iqs);
+            fprintf(f_noload, "%f,%f,%f,%f,%f,%f\n", freq, v_by_f_prev, volt, sqrt(CTRL.ual*CTRL.ual + CTRL.ube*CTRL.ube), sqrt(ACM.ids*ACM.ids + ACM.iqs*ACM.iqs), CTRL.ual*ACM.ids+CTRL.ube*ACM.iqs);
+        }
+        v_by_f_prev = v_by_f;
+        freq = 60;
+        volt = v_by_f * freq;
+        CTRL.ual = volt*cos(2*M_PI*freq*CTRL.timebase);
+        CTRL.ube = volt*sin(2*M_PI*freq*CTRL.timebase);
+
+        // Clarke transformation for 3 phase quantities
+        volt_U = AB2U(CTRL.ual, CTRL.ube);
+        volt_V = AB2V(CTRL.ual, CTRL.ube);
+        volt_W = AB2W(CTRL.ual, CTRL.ube);
+        curr_U = AB2U(ACM.ial, ACM.ibe);
+        curr_V = AB2V(ACM.ial, ACM.ibe);
+        curr_W = AB2W(ACM.ial, ACM.ibe);
 
         inverter_model();
     }
     end = clock(); printf("The simulation in C costs %g sec.\n", (double)(end - begin)/CLOCKS_PER_SEC);
     fclose(fw);
+    fclose(f_noload);
 
     /* Fade out */
     system("python ./ACMPlot.py"); 
@@ -412,7 +514,8 @@ void write_header_to_file(FILE *fw){
         // no space is allowed!
         // fprintf(fw, "x0,x1,x2,x3,rpm,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs,psi_mu_al,tajima_rpm\n");
         // fprintf(fw, "$x_0$,$x_1$,$x_2$,$x_3$,Speed [rpm],$u_{Ms}^*$,$u_{Ts}^*$,$i_{Ms}^*$,$i_{Ms}$,$i_{Ts}^*$,$i_{Ts}$,$\\psi_{\\alpha\\mu}$,tajima_rpm\n");
-        fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,CTRL.uMs_cmd,CTRL.uTs_cmd,CTRL.iMs_cmd,CTRL.iMs,CTRL.iTs_cmd,CTRL.iTs,ob.psi_mu_al,ob.tajima.omg*RAD_PER_SEC_2_RPM,ACM.rpm\n");
+        // fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,CTRL.uMs_cmd,CTRL.uTs_cmd,CTRL.iMs_cmd,CTRL.iMs,CTRL.iTs_cmd,CTRL.iTs,ob.psi_mu_al,ob.tajima.omg*RAD_PER_SEC_2_RPM,ACM.rpm\n");
+        fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,volt_U,volt_V,volt_W,curr_U,curr_V,curr_W,ACM.rpm,v_by_f,ACM.ial,ACM.ibe\n");
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         // no space is allowed!
         fprintf(fw, "x0,x1,x2,x3,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs\n");
@@ -437,10 +540,8 @@ void write_data_to_file(FILE *fw){
             j=0;
             #if MACHINE_TYPE == INDUCTION_MACHINE
                 // 数目必须对上，否则ACMAnimate会失效，但是不会影响ACMPlot
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-                        ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], ACM.x[4], ACM.Tem, 
-                        CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.iMs_cmd, CTRL.iMs, CTRL.iTs_cmd, CTRL.iTs,
-                        OB_FLUX(0), OB_OMG*RAD_PER_SEC_2_RPM, ACM.rpm
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                        ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,volt_U,volt_V,volt_W,curr_U,curr_V,curr_W,ACM.rpm,v_by_f,ACM.ial,ACM.ibe
                         );
             #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
                 fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
