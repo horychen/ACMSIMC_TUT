@@ -11,6 +11,10 @@
 pyrhonen_procedure_s*.tex
 *.txt
 
+# subllime text
+*.sublime-project
+*.sublime-workspace
+
 # ----------------------------------------------------- for LaTeX related temporary files
 
 ## Core latex/pdflatex auxiliary files:
