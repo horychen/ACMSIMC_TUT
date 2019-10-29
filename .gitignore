@@ -1,3 +1,7 @@
+# sublime
+*.sublime-*
+
+
 # acm_simc related
 *.exe
 *.dat
