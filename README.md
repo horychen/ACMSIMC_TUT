@@ -20,6 +20,7 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [IM] mras: model reference adaptive system based sensorless control (my 2017-Chen.Huang-Online paper).
 - [IM] \_femm: (This branch does not really belong here but I don't want to create a new repository for it...) It is about the design of the induction motor using free softwares as well as fitting the design to the equivalent circuit parameters for further control simulation.
 - [IM] saturation: include iron core saturation effect into the induction motor model simulation.
+- [Both] inverter_model: simple inverter modeling based on the paper 1996-Choi.Sul-Inverter.
 
 ## Dependency under Windows
 - Anaconda 3 (you should be able to call python from cmd.exe)
