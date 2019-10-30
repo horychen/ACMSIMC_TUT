@@ -11,7 +11,7 @@ The numerical integration method is currently RK4, which is quite enough.
 DoPri54 will be included in future version (including stiffness detection and variable step numerical integration).
 
 ## Introduction to Current Branches:
-- [IM] master: vvvf branch plus other utility features.
+- [IM] master: combination of other branches, kept in a developing status in which I feel good.
 - [IM] vvvf: the skeleton with induction motor simulation and VVVF control.
 - [IM] foc: field oriented control (direct/indirect) with basic sensorless control.
 - [IM] animate: test the feature of waveform (results) animation.
@@ -22,11 +22,17 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [IM] saturation: include iron core saturation effect into the induction motor model simulation.
 - [Both] inverter_model: simple inverter modeling based on the paper 1996-Choi.Sul-Inverter.
 
+## Visualization
+- The plots are made using package matplotlib. 
+    - In branch animate, I tested the feature of waveform animation with matplotlib.
+- You can also try browser based libraries, e.g., plotly_express.
+
 ## Dependency under Windows
 - Anaconda 3 (you should be able to call python from cmd.exe)
 - MinGW (you should be able to call gcc from cmd.exe)
 - FEMM ([femm.info](http://www.femm.info/wiki/HomePage), you do not need this if you are not interested in Finite Element Analysis and motor design)
   - PyFEMM (a wrapper for FEMM API; use pip to install this)
+- Editor (optional): Sublime Text (preferred) or Visual Studio Code.
 
 ## Dependency under Linux
 - FEMM is a Windows-only FEA software. 
