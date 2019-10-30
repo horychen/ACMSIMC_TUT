@@ -421,7 +421,7 @@ void write_header_to_file(FILE *fw){
         // fprintf(fw, "x0,x1,x2,x3,rpm,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs,psi_mu_al,tajima_rpm\n");
         // fprintf(fw, "$x_0$,$x_1$,$x_2$,$x_3$,Speed [rpm],$u_{Ms}^*$,$u_{Ts}^*$,$i_{Ms}^*$,$i_{Ms}$,$i_{Ts}^*$,$i_{Ts}$,$\\psi_{\\alpha\\mu}$,tajima_rpm\n");
         // fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,CTRL.uMs_cmd,CTRL.uTs_cmd,CTRL.iMs_cmd,CTRL.iMs,CTRL.iTs_cmd,CTRL.iTs,ob.psi_mu_al,ob.tajima.omg*RAD_PER_SEC_2_RPM,ACM.rpm\n");
-        fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,ACM.ual,ACM.ube,ACM.rpm_cmd,e_omega\n");
+        fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,ACM.ual,ACM.ube,ACM.ial,ACM.ibe,ACM.rpm_cmd,e_omega\n");
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         // no space is allowed!
         fprintf(fw, "x0,x1,x2,x3,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs\n");
@@ -446,9 +446,9 @@ void write_data_to_file(FILE *fw){
             j=0;
             #if MACHINE_TYPE == INDUCTION_MACHINE
                 // 数目必须对上，否则ACMAnimate会失效，但是不会影响ACMPlot
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                         ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,
-                        ACM.ual,ACM.ube,ACM.rpm_cmd,ACM.rpm_cmd-ACM.x[4]*RAD_PER_SEC_2_RPM
+                        ACM.ual,ACM.ube,ACM.ial,ACM.ibe,ACM.rpm_cmd,ACM.rpm_cmd-ACM.x[4]*RAD_PER_SEC_2_RPM
                         );
             #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
                 fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
