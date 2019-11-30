@@ -104,29 +104,25 @@ plot_it(ax_list[0], r'$i_s$ [V]', O([
                                              (r'0',   ll[0]),  
                                              (r'1',   ll[1]),  
                                              ]))
-plot_it(ax_list[1], r'$\psi_\mu$ [A]', O([
+plot_it(ax_list[1], r'$\omega$ [rpm]', O([
                                              (r'0',   ll[2]),  
-                                             (r'1',   ll[11]),
                                              ]))
-plot_it(ax_list[2], r'speed [rpm]', O([
-                                             (r'0',   ll[4]),  
-                                             (r'1',   ll[12]),
+plot_it(ax_list[2], r'$\theta_{rm} $ [rad]', O([
+                                             (r'1',   ll[3]),  
                                              ]))
 plot_it(ax_list[3], r'voltage [V]', O([
-                                             (r'0',   ll[5]),  
-                                             (r'1',   ll[6]),  
+                                             (r'0',   ll[4]),  
+                                             (r'1',   ll[5]),  
                                              ]))
 plot_it(ax_list[4], r'MT current [A]', O([
-                                             (r'1',   ll[7]),  
-                                             (r'2',   ll[8]),  
-                                             (r'3',   ll[9]),  
-                                             (r'4',   ll[10]),  
+                                             (r'1',   ll[6]),  
+                                             (r'2',   ll[7]),  
+                                             (r'3',   ll[8]),  
+                                             (r'4',   ll[9]),  
                                              ]))
 # Automatic END
 show()
 # savefig(r'C:/Dr.H/(0) GET WORKING/05 3ph 3paramsId/3ph_TDDA_TEX/pic/'+where[:-1], dpi=300)
-
-
 
 
 
