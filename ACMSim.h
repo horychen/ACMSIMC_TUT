@@ -3,7 +3,7 @@
 
 #define INDUCTION_MACHINE 1
 #define SYNCHRONOUS_MACHINE 2
-#define MACHINE_TYPE INDUCTION_MACHINE
+#define MACHINE_TYPE SYNCHRONOUS_MACHINE
 
 /* standard lib */
 #include <stdio.h> // printf #include <stdbool.h> // bool for _Bool and true for 1
@@ -34,6 +34,11 @@
     #define NULL_D_AXIS_CURRENT_CONTROL -1
     #define MTPA -2 // not supported
     #define CONTROL_STRATEGY NULL_D_AXIS_CURRENT_CONTROL
+
+    #define NOTHING 0
+    #define EEMF_OBSERVER 1
+    #define ACTIVE_FLUX_OBSERVER 2
+    #define OBSERVER_APPLIED NOTHING
 
     #define SENSORLESS_CONTROL false
 #endif
@@ -194,7 +199,7 @@
 #include "observer.h"
 #include "Add_TAAO.h"
 // #include "utility.h"
-#include "inverter.h"
+// #include "inverter.h"
 
 
 // saturation

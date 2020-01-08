@@ -58,6 +58,106 @@ double fabs(double x){
             ACM.psimq = 0.0;
             ACM.psimd = 0.0;
     }
+
+    /* Saturation Model (also considers inverter model) | Could be adapted for PMSM*/
+    void collectCurrents(double *x){
+        // Generalised Current by Therrien2013
+        ACM.izq = x[1]/ACM.Lls + x[3]/ACM.Llr;
+        ACM.izd = x[0]/ACM.Lls + x[2]/ACM.Llr;
+        ACM.iz = sqrt(ACM.izd*ACM.izd + ACM.izq*ACM.izq);
+
+        if(ACM.iz>1e-8){
+            #if SATURATED_MAGNETIC_CIRCUIT
+                ACM.psim = sat_lookup(ACM.iz, satLUT);
+                ACM.im = ACM.iz - ACM.psim/ACM.LSigmal;
+                {
+                    ACM.Lm = ACM.psim/ACM.im;
+                    ACM.Lmu = ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Llr);
+                    ACM.Lmu_inv = 1.0/ACM.Lmu;
+                    ACM.alpha = ACM.rr/(ACM.Lm+ACM.Llr);
+                    ACM.rreq = ACM.Lmu*ACM.alpha;
+                    ACM.Lsigma = (ACM.Lls+ACM.Lm) - ACM.Lmu;
+                    ACM.Lm_slash_Lr = ACM.Lm/(ACM.Lm+ACM.Llr);
+                    ACM.Lr_slash_Lm = (ACM.Lm+ACM.Llr)/ACM.Lm;
+                }
+            #else
+                ACM.psim = 1.0/(1.0/ACM.Lm+1.0/ACM.Lls+1.0/ACM.Llr)*ACM.iz;
+            #endif
+
+            ACM.psimq = ACM.psim/ACM.iz*ACM.izq;
+            ACM.psimd = ACM.psim/ACM.iz*ACM.izd;
+        }else{
+            #if ACMSIMC_DEBUG
+                printf("how to handle zero iz?\n");
+            #endif
+            ACM.psimq = 0;
+            ACM.psimd = 0;
+        }
+
+        ACM.iqs = (x[1] - ACM.psimq) / ACM.Lls;
+        ACM.ids = (x[0] - ACM.psimd) / ACM.Lls;
+        ACM.iqr = (x[3] - ACM.psimq) / ACM.Llr;
+        ACM.idr = (x[2] - ACM.psimd) / ACM.Llr;    
+
+        // /* Direct compute is ir from psis psir */
+        // ACM.iqs = (x[1] - (ACM.Lm/(ACM.Lm+ACM.Llr))*x[3])/ACM.Lsigma;
+        // ACM.ids = (x[0] - (ACM.Lm/(ACM.Lm+ACM.Llr))*x[2])/ACM.Lsigma;
+        // ACM.iqr = (x[3] - (ACM.Lm/(ACM.Lm+ACM.Lls))*x[1])/(ACM.Lm+ACM.Llr-ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls));
+        // ACM.idr = (x[2] - (ACM.Lm/(ACM.Lm+ACM.Lls))*x[0])/(ACM.Lm+ACM.Llr-ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls));
+    }
+    void rK5_satDynamics(double t, double *x, double *fx){
+        /* argument t is omitted*/
+
+        /* STEP ZERO: collect all the currents: is, ir, iz */
+        collectCurrents(x);
+
+        /* STEP ONE: Inverter Nonlinearity Considered */
+        ACM.ual; // not CTRL.ual
+        ACM.ube; // not CTRL.ube
+
+        /* STEP TWO: electromagnetic model with full flux states in alpha-beta frame */
+        fx[1] = ACM.ube - ACM.rs*ACM.iqs; // 这里是反过来的！Q轴在前面！
+        fx[0] = ACM.ual - ACM.rs*ACM.ids;
+        fx[3] =         - ACM.rr*ACM.iqr + x[4]*x[2]; // 这里是反过来的！Q轴在前面！
+        fx[2] =         - ACM.rr*ACM.idr - x[4]*x[3];
+
+        /* STEP THREE: mechanical model */
+        // ACM.Tem = ACM.npp*(ACM.Lm/(ACM.Lm+ACM.Llr))*(ACM.iqs*x[2]-ACM.ids*x[3]); // this is not better 
+        ACM.Tem = ACM.npp*(ACM.iqs*x[0]-ACM.ids*x[1]);
+        fx[4] = (ACM.Tem - ACM.Tload)*ACM.mu_m;
+    }
+    double one_over_six = 1.0/6.0;
+    void rK555_Sat(double t, double *x, double hs){
+        double k1[5], k2[5], k3[5], k4[5], xk[5];
+        double fx[5];
+        int i;
+
+        rK5_satDynamics(t, x, fx); // timer.t,
+        for(i=0;i<5;++i){        
+            k1[i] = fx[i] * hs;
+            xk[i] = x[i] + k1[i]*0.5;
+        }
+        
+        rK5_satDynamics(t, xk, fx); // timer.t+hs/2., 
+        for(i=0;i<5;++i){        
+            k2[i] = fx[i] * hs;
+            xk[i] = x[i] + k2[i]*0.5;
+        }
+        
+        rK5_satDynamics(t, xk, fx); // timer.t+hs/2., 
+        for(i=0;i<5;++i){        
+            k3[i] = fx[i] * hs;
+            xk[i] = x[i] + k3[i];
+        }
+        
+        rK5_satDynamics(t, xk, fx); // timer.t+hs, 
+        for(i=0;i<5;++i){        
+            k4[i] = fx[i] * hs;
+            x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])*one_over_six;
+        }
+        
+        collectCurrents(x);
+    }
 #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
     struct SynchronousMachineSimulated ACM;
     void Machine_init(){
@@ -99,106 +199,6 @@ double fabs(double x){
         ACM.theta_d = 0.0;
     }
 #endif
-
-/* Saturation Model (also considers inverter model) */
-void collectCurrents(double *x){
-    // Generalised Current by Therrien2013
-    ACM.izq = x[1]/ACM.Lls + x[3]/ACM.Llr;
-    ACM.izd = x[0]/ACM.Lls + x[2]/ACM.Llr;
-    ACM.iz = sqrt(ACM.izd*ACM.izd + ACM.izq*ACM.izq);
-
-    if(ACM.iz>1e-8){
-        #if SATURATED_MAGNETIC_CIRCUIT
-            ACM.psim = sat_lookup(ACM.iz, satLUT);
-            ACM.im = ACM.iz - ACM.psim/ACM.LSigmal;
-            {
-                ACM.Lm = ACM.psim/ACM.im;
-                ACM.Lmu = ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Llr);
-                ACM.Lmu_inv = 1.0/ACM.Lmu;
-                ACM.alpha = ACM.rr/(ACM.Lm+ACM.Llr);
-                ACM.rreq = ACM.Lmu*ACM.alpha;
-                ACM.Lsigma = (ACM.Lls+ACM.Lm) - ACM.Lmu;
-                ACM.Lm_slash_Lr = ACM.Lm/(ACM.Lm+ACM.Llr);
-                ACM.Lr_slash_Lm = (ACM.Lm+ACM.Llr)/ACM.Lm;
-            }
-        #else
-            ACM.psim = 1.0/(1.0/ACM.Lm+1.0/ACM.Lls+1.0/ACM.Llr)*ACM.iz;
-        #endif
-
-        ACM.psimq = ACM.psim/ACM.iz*ACM.izq;
-        ACM.psimd = ACM.psim/ACM.iz*ACM.izd;
-    }else{
-        #if ACMSIMC_DEBUG
-            printf("how to handle zero iz?\n");
-        #endif
-        ACM.psimq = 0;
-        ACM.psimd = 0;
-    }
-
-    ACM.iqs = (x[1] - ACM.psimq) / ACM.Lls;
-    ACM.ids = (x[0] - ACM.psimd) / ACM.Lls;
-    ACM.iqr = (x[3] - ACM.psimq) / ACM.Llr;
-    ACM.idr = (x[2] - ACM.psimd) / ACM.Llr;    
-
-    // /* Direct compute is ir from psis psir */
-    // ACM.iqs = (x[1] - (ACM.Lm/(ACM.Lm+ACM.Llr))*x[3])/ACM.Lsigma;
-    // ACM.ids = (x[0] - (ACM.Lm/(ACM.Lm+ACM.Llr))*x[2])/ACM.Lsigma;
-    // ACM.iqr = (x[3] - (ACM.Lm/(ACM.Lm+ACM.Lls))*x[1])/(ACM.Lm+ACM.Llr-ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls));
-    // ACM.idr = (x[2] - (ACM.Lm/(ACM.Lm+ACM.Lls))*x[0])/(ACM.Lm+ACM.Llr-ACM.Lm*ACM.Lm/(ACM.Lm+ACM.Lls));
-}
-void rK5_satDynamics(double t, double *x, double *fx){
-    /* argument t is omitted*/
-
-    /* STEP ZERO: collect all the currents: is, ir, iz */
-    collectCurrents(x);
-
-    /* STEP ONE: Inverter Nonlinearity Considered */
-    ACM.ual; // not CTRL.ual
-    ACM.ube; // not CTRL.ube
-
-    /* STEP TWO: electromagnetic model with full flux states in alpha-beta frame */
-    fx[1] = ACM.ube - ACM.rs*ACM.iqs; // 这里是反过来的！Q轴在前面！
-    fx[0] = ACM.ual - ACM.rs*ACM.ids;
-    fx[3] =         - ACM.rr*ACM.iqr + x[4]*x[2]; // 这里是反过来的！Q轴在前面！
-    fx[2] =         - ACM.rr*ACM.idr - x[4]*x[3];
-
-    /* STEP THREE: mechanical model */
-    // ACM.Tem = ACM.npp*(ACM.Lm/(ACM.Lm+ACM.Llr))*(ACM.iqs*x[2]-ACM.ids*x[3]); // this is not better 
-    ACM.Tem = ACM.npp*(ACM.iqs*x[0]-ACM.ids*x[1]);
-    fx[4] = (ACM.Tem - ACM.Tload)*ACM.mu_m;
-}
-double one_over_six = 1.0/6.0;
-void rK555_Sat(double t, double *x, double hs){
-    double k1[5], k2[5], k3[5], k4[5], xk[5];
-    double fx[5];
-    int i;
-
-    rK5_satDynamics(t, x, fx); // timer.t,
-    for(i=0;i<5;++i){        
-        k1[i] = fx[i] * hs;
-        xk[i] = x[i] + k1[i]*0.5;
-    }
-    
-    rK5_satDynamics(t, xk, fx); // timer.t+hs/2., 
-    for(i=0;i<5;++i){        
-        k2[i] = fx[i] * hs;
-        xk[i] = x[i] + k2[i]*0.5;
-    }
-    
-    rK5_satDynamics(t, xk, fx); // timer.t+hs/2., 
-    for(i=0;i<5;++i){        
-        k3[i] = fx[i] * hs;
-        xk[i] = x[i] + k3[i];
-    }
-    
-    rK5_satDynamics(t, xk, fx); // timer.t+hs, 
-    for(i=0;i<5;++i){        
-        k4[i] = fx[i] * hs;
-        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])*one_over_six;
-    }
-    
-    collectCurrents(x);
-}
 
 /* Simple Model */
 void rK5_dynamics(double t, double *x, double *fx){
