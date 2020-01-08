@@ -6,6 +6,8 @@
 # sublime
 *.sublime-*
 
+# codes under development
+/_*
 
 # acm_simc related
 *.exe
