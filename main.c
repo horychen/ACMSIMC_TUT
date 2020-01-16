@@ -398,7 +398,8 @@ int main(){
 
             write_data_to_file(fw);
 
-            control(ACM.rpm_cmd, 0);
+            // control(ACM.rpm_cmd, 0);
+            selfcommissioning();
         }
 
         inverter_model();
@@ -417,14 +418,11 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     #if MACHINE_TYPE == INDUCTION_MACHINE
-        // no space is allowed!
-        // fprintf(fw, "x0,x1,x2,x3,rpm,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs,psi_mu_al,tajima_rpm\n");
-        // fprintf(fw, "$x_0$,$x_1$,$x_2$,$x_3$,Speed [rpm],$u_{Ms}^*$,$u_{Ts}^*$,$i_{Ms}^*$,$i_{Ms}$,$i_{Ts}^*$,$i_{Ts}$,$\\psi_{\\alpha\\mu}$,tajima_rpm\n");
-        // fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,CTRL.uMs_cmd,CTRL.uTs_cmd,CTRL.iMs_cmd,CTRL.iMs,CTRL.iTs_cmd,CTRL.iTs,ob.psi_mu_al,ob.tajima.omg*RAD_PER_SEC_2_RPM,ACM.rpm\n");
-        fprintf(fw, "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,ACM.ual,ACM.ube,ACM.rpm_cmd,e_omega\n");
     #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
         // no space is allowed!
-        fprintf(fw, "x0,x1,x2,x3,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs\n");
+        // fprintf(fw, "x0,x1,x2,x3,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs\n");
+        // fprintf(fw, "x0,x1,x2,x3,ual_cmd,ube_cmd,ial_cmd,ial,ibe_cmd,ibe,CTRL.ids_pose,CTRL.iqs_pose,CTRL.ids_nese,CTRL.iqs_nese\n");
+        fprintf(fw, "x0,x1,x2,x3,ial_cmd,ial,ibe_cmd,ibe,CTRL.ids_pose,CTRL.iqs_pose,CTRL.ids_nese,CTRL.iqs_nese,CTRL.pi_iD_PR_pose.i_state,CTRL.pi_iQ_PR_pose.i_state,CTRL.pi_iD_PR_nese.i_state,CTRL.pi_iQ_PR_nese.i_state\n");
     #endif
 
     {
@@ -445,15 +443,21 @@ void write_data_to_file(FILE *fw){
         {
             j=0;
             #if MACHINE_TYPE == INDUCTION_MACHINE
-                // 数目必须对上，否则ACMAnimate会失效，但是不会影响ACMPlot
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-                        ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.Tem,
-                        ACM.ual,ACM.ube,ACM.rpm_cmd,ACM.rpm_cmd-ACM.x[4]*RAD_PER_SEC_2_RPM
-                        );
             #elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                // fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                //         ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3],
+                //         CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.iMs_cmd, CTRL.iMs, CTRL.iTs_cmd, CTRL.iTs
+                //         );
+                // fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                //         ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3],
+                //         CTRL.ual_cmd, CTRL.ube_cmd, CTRL.ial_cmd, IS_C(0), CTRL.ibe_cmd, IS_C(1)
+                //         );
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                         ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3],
-                        CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.iMs_cmd, CTRL.iMs, CTRL.iTs_cmd, CTRL.iTs
+                        CTRL.ial_cmd, IS_C(0), CTRL.ibe_cmd, IS_C(1),
+                        CTRL.ids_pose, CTRL.iqs_pose, CTRL.ids_nese, CTRL.iqs_nese,
+                        CTRL.pi_iD_PR_pose.i_state,CTRL.pi_iQ_PR_pose.i_state,
+                        CTRL.pi_iD_PR_nese.i_state,CTRL.pi_iQ_PR_nese.i_state
                         );
             #endif
         }
