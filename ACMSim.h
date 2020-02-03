@@ -10,29 +10,6 @@
 #include "math.h"
 #include "time.h"
 
-
-#define NULL_D_AXIS_CURRENT_CONTROL -1
-#define MTPA -2 // not supported
-#define CONTROL_STRATEGY NULL_D_AXIS_CURRENT_CONTROL
-
-#define SENSORLESS_CONTROL false
-#define VOLTAGE_CURRENT_DECOUPLING_CIRCUIT false
-#define SATURATED_MAGNETIC_CIRCUIT false
-#define INVERTER_NONLINEARITY false
-
-
-/* How long should I go? */
-#define NUMBER_OF_LINES (1*150000)
-
-
-#define MACHINE_TS 1.25e-4
-#define MACHINE_TS_INVERSE 8000
-#define DOWN_FREQ_EXE 2
-#define DOWN_FREQ_EXE_INVERSE 0.5
-#define TS (MACHINE_TS*DOWN_FREQ_EXE) //2.5e-4 
-#define TS_INVERSE (MACHINE_TS_INVERSE*DOWN_FREQ_EXE_INVERSE) // 4000
-#define DOWN_SAMPLE 1 // 5 // 10
-
 /* Macro for Part transformation*/
 #define AB2M(A, B, COS, SIN)  ( (A)*COS  + (B)*SIN )
 #define AB2T(A, B, COS, SIN)  ( (A)*-SIN + (B)*COS )
@@ -67,45 +44,60 @@
 // 补充的宏，为了实现实验/仿真代码大一统
 #define Uint32 unsigned long int
 #define Uint16 unsigned int
-#define PHASE_NUMBER 3
+
+#define NUMBER_OF_STATES 4 // valid for PMSM
+#define PHASE_NUMBER 3 // 3 phase machine
+
+
+
+// Everthing else is in here
+#include "ACMConfig.h"
+
 
 
 struct SynchronousMachineSimulated{
-    double x[5];
+
+    double Ts;
+
+    double x[NUMBER_OF_STATES];
+    double x_dot[NUMBER_OF_STATES];
+
+    double omg_elec;
     double rpm;
     double rpm_cmd;
     double rpm_deriv_cmd;
     double Tload;
     double Tem;
 
+    double npp;
+
     double R;
     double Ld;
     double Lq;
-    double KE;
+    double KE; // psi_PM
+    double Js;
+
+    double mu_m;
     double L0;
     double L1;
 
-    double Js;
-    double npp;
-    double mu_m;
-    double Ts;
-
-    double id;
-    double iq;
-
+    double ual;
+    double ube;
     double ial;
     double ibe;
 
+    double theta_d;
     double ud;
     double uq;
+    double id;
+    double iq;
 
-    double ual;
-    double ube;
-
-    double theta_d;
+    double eemf_q;
+    double eemf_al;
+    double eemf_be;
+    double theta_d__eemf;
 };
 extern struct SynchronousMachineSimulated ACM;
-
 
 #include "controller.h"
 #include "observer.h"
@@ -114,10 +106,9 @@ extern struct SynchronousMachineSimulated ACM;
 // #include "inverter.h"
 
 
-// saturation
+// Saturation
 // #include "satlut.h"
 // #define ACMSIMC_DEBUG false
-
 
 
 /* Declaration of Utility Function */

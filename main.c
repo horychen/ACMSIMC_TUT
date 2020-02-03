@@ -9,42 +9,49 @@ double fabs(double x){
 
 struct SynchronousMachineSimulated ACM;
 void Machine_init(){
+
+    ACM.Ts  = MACHINE_TS;
+
     int i;
-    for(i=0;i<5;++i){
+    for(i=0;i<NUMBER_OF_STATES;++i){
         ACM.x[i] = 0.0;
+        ACM.x_dot[i] = 0.0;
     }
+
+    ACM.omg_elec = 0.0;
     ACM.rpm = 0.0;
     ACM.rpm_cmd = 0.0;
     ACM.rpm_deriv_cmd = 0.0;
     ACM.Tload = 0.0;
     ACM.Tem = 0.0;
 
-    ACM.R  = 0.45;
-    ACM.Ld = 4.15*1e-3;
-    ACM.Lq = 16.74*1e-3;
-    ACM.KE = 0.504; // Vs/rad
+    ACM.npp = PMSM_NUMBER_OF_POLE_PAIRS;
+
+    ACM.R  = PMSM_RESISTANCE;
+    ACM.Ld = PMSM_D_AXIS_INDUCTANCE;
+    ACM.Lq = PMSM_Q_AXIS_INDUCTANCE;
+    ACM.KE = PMSM_PERMANENT_MAGNET_FLUX_LINKAGE; // Vs/rad
+    ACM.Js = PMSM_SHAFT_INERTIA;
+
+    ACM.mu_m = ACM.npp/ACM.Js;
     ACM.L0 = 0.5*(ACM.Ld + ACM.Lq);
     ACM.L1 = 0.5*(ACM.Ld - ACM.Lq);
 
-    ACM.Js = 0.06; // Awaya92 using ACM.omg
-    ACM.npp = 2;
-    ACM.mu_m = ACM.npp/ACM.Js;
-
-    ACM.Ts  = MACHINE_TS;
-
-    ACM.id = 0.0;
-    ACM.iq = 0.0;
-
+    ACM.ual = 0.0;
+    ACM.ube = 0.0;
     ACM.ial = 0.0;
     ACM.ibe = 0.0;
 
+    ACM.theta_d = 0.0;
     ACM.ud = 0.0;
     ACM.uq = 0.0;
+    ACM.id = 0.0;
+    ACM.iq = 0.0;
 
-    ACM.ual = 0.0;
-    ACM.ube = 0.0;
-
-    ACM.theta_d = 0.0;
+    ACM.eemf_q  = 0.0;
+    ACM.eemf_al = 0.0;
+    ACM.eemf_be = 0.0;
+    ACM.theta_d__eemf = 0.0;
 }
 
 /* Simple Model */
@@ -59,7 +66,6 @@ void RK_dynamics(double t, double *x, double *fx){
     fx[3] = x[2];                           // elec. angular rotor position
 }
 void RK_Linear(double t, double *x, double hs){
-    #define NUMBER_OF_STATES 4
     #define NS NUMBER_OF_STATES
 
     double k1[NS], k2[NS], k3[NS], k4[NS], xk[NS];
@@ -88,14 +94,19 @@ void RK_Linear(double t, double *x, double hs){
     for(i=0;i<NS;++i){        
         k4[i] = fx[i] * hs;
         x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0;
+
+        // derivatives
+        ACM.x_dot[i] = (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0 / hs; 
     }
 }
 
 
 int machine_simulation(){
 
+    // solve for ACM.x with ACM.ud and ACM.uq as inputs
     RK_Linear(CTRL.timebase, ACM.x, ACM.Ts);
 
+    // rotor position
     ACM.theta_d = ACM.x[3];
     if(ACM.theta_d > M_PI){
         ACM.theta_d -= 2*M_PI;
@@ -104,12 +115,23 @@ int machine_simulation(){
     }
     ACM.x[3] = ACM.theta_d;
 
+    // currents
     ACM.id  = ACM.x[0];
     ACM.iq  = ACM.x[1];
     ACM.ial = MT2A(ACM.id, ACM.iq, cos(ACM.theta_d), sin(ACM.theta_d));
     ACM.ibe = MT2B(ACM.id, ACM.iq, cos(ACM.theta_d), sin(ACM.theta_d));
+
+    // speed
+    ACM.omg_elec = ACM.x[2];
     ACM.rpm = ACM.x[2] * 60 / (2 * M_PI * ACM.npp);
 
+    // extended emf
+    ACM.eemf_q  = (ACM.Ld-ACM.Lq) * (ACM.omg_elec*ACM.id - ACM.x_dot[1]) + ACM.omg_elec*ACM.KE;
+    ACM.eemf_al = ACM.eemf_q * -sin(ACM.theta_d);
+    ACM.eemf_be = ACM.eemf_q *  cos(ACM.theta_d);
+    ACM.theta_d__eemf = atan2(-ACM.eemf_al*sign(ACM.omg_elec), ACM.eemf_be*sign(ACM.omg_elec));
+
+    // detect bad simulation
     if(isNumber(ACM.rpm)){
         return false;
     }else{
@@ -153,7 +175,7 @@ void inverter_model(){
 
 int main(){
     
-    printf("NUMBER_OF_LINES: %d\n\n", NUMBER_OF_LINES);
+    printf("NUMBER_OF_STEPS: %d\n\n", NUMBER_OF_STEPS);
 
     /* Initialization */
     Machine_init();
@@ -170,7 +192,7 @@ int main(){
     begin = clock();
     int _; // _ for the outer iteration
     int dfe=0; // dfe for down frequency execution
-    for(_=0;_<NUMBER_OF_LINES;++_){
+    for(_=0;_<NUMBER_OF_STEPS;++_){
 
         /* Command and Load Torque */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
@@ -217,7 +239,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position[rad]),ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A]\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position[rad]),ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad]\n");
 
     {
         FILE *fw2;
@@ -236,9 +258,10 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
-                    CTRL.id_cmd, CTRL.id-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq-CTRL.iq_cmd
+                    CTRL.id_cmd, CTRL.id-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
+                    ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf)
                     );
         }
     }

@@ -23,13 +23,13 @@ struct SynchronousMachine{
     double npp;
     double npp_inv;
 
-    double Js;
-    double Js_inv;
-
     double R;
-    double KE;
     double Ld;
     double Lq;
+    double KE;
+
+    double Js;
+    double Js_inv;
 
     double omg_elec; // omg_elec = npp * omg_mech
     double omg_mech;
@@ -38,14 +38,14 @@ struct SynchronousMachine{
 extern struct SynchronousMachine sm;
 
 struct Observer{
-    double Js;
-    double Js_inv;
 
     double R;
-    double KE;
-    double psi_PM;
     double Ld;
     double Lq;
+    double KE; // psi_PM;
+
+    double Js;
+    double Js_inv;
 
     double omg_elec; // omg_elec = npp * omg_mech
     double omg_mech;
@@ -53,6 +53,7 @@ struct Observer{
 
     double eemf_al;
     double eemf_be;
+    double eemf_q;
 };
 extern struct Observer ob;
 

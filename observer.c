@@ -15,38 +15,43 @@ void sm_init(){
         sm.is_prev[i] = 0;        
     }
 
-    sm.npp = ACM.npp;
+
+    sm.npp = PMSM_NUMBER_OF_POLE_PAIRS;
     sm.npp_inv = 1.0/ACM.npp;
 
-    sm.Js = ACM.Js;
+    sm.R  = PMSM_RESISTANCE;
+    sm.Ld = PMSM_D_AXIS_INDUCTANCE;
+    sm.Lq = PMSM_Q_AXIS_INDUCTANCE;
+    sm.KE = PMSM_PERMANENT_MAGNET_FLUX_LINKAGE; // Vs/rad
+
+    sm.Js = PMSM_SHAFT_INERTIA;
     sm.Js_inv = 1./sm.Js;
 
-    sm.R = ACM.R;
-    sm.KE = ACM.KE;
-    sm.Ld = ACM.Ld;
-    sm.Lq = ACM.Lq;
-
-    sm.omg_elec = 0;
+    sm.omg_elec = 0.0;
     sm.omg_mech = sm.omg_elec * sm.npp_inv;
+    sm.theta_d = 0.0;
 }
 
 void ob_init(){
 
-    ob.Js = ACM.Js;
+    ob.R  = PMSM_RESISTANCE;
+    ob.KE = PMSM_D_AXIS_INDUCTANCE;
+    ob.Ld = PMSM_Q_AXIS_INDUCTANCE;
+    ob.Lq = PMSM_PERMANENT_MAGNET_FLUX_LINKAGE; // Vs/rad
+
+    ob.Js = PMSM_SHAFT_INERTIA;
     ob.Js_inv = 1.0/ob.Js;
 
-    ob.R = ACM.R;
-    ob.KE = ACM.KE;
-    ob.Ld = ACM.Ld;
-    ob.Lq = ACM.Lq;
-
-    ob.omg_elec = 0;
+    ob.omg_elec = 0.0;
     ob.omg_mech = ob.omg_elec * sm.npp_inv;
+    ob.theta_d = 0.0;
 
     ob.eemf_al = 0.0;
     ob.eemf_be = 0.0;
+    ob.eemf_q = 0.0;
 }
 
 
 void observation(){
+
 }

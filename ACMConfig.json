@@ -1,0 +1,39 @@
+{
+    "#01 ACMSIMC PMSM EEMF": {
+
+        "NUMBER_OF_STEPS": 150000,
+        "DOWN_SAMPLE": 1,
+
+        "CONTROL_STRATEGY": "NULL_D_AXIS_CURRENT_CONTROL",
+
+        "SENSORLESS_CONTROL": false,
+        "VOLTAGE_CURRENT_DECOUPLING_CIRCUIT": false,
+        "SATURATED_MAGNETIC_CIRCUIT": false,
+        "INVERTER_NONLINEARITY": false,
+
+        "MACHINE_TS": 1.25e-4,
+        "MACHINE_TS_INVERSE": 8000,
+        "DOWN_FREQ_EXE": 2,
+        "DOWN_FREQ_EXE_INVERSE": 0.5,
+
+        "PMSM_NUMBER_OF_POLE_PAIRS": 2,
+        "PMSM_RESISTANCE": 0.45,
+        "PMSM_D_AXIS_INDUCTANCE": 0.00415,
+        "PMSM_Q_AXIS_INDUCTANCE": 0.01674,
+        "PMSM_PERMANENT_MAGNET_FLUX_LINKAGE": 0.504,
+        "PMSM_SHAFT_INERTIA": 0.06,
+
+        "SPEED_LOOP_P": 0,
+        "SPEED_LOOP_I": 0,
+        "SPEED_LOOP_D": 0,
+        "SPEED_LOOP_LIMIT": 0,
+
+        "CURRENT_LOOP_P": 0,
+        "CURRENT_LOOP_I": 0,
+        "CURRENT_LOOP_D": 0,
+        "CURRENT_LOOP_LIMIT": 0,
+
+        "PC_SIMULATION": true
+    }
+}
+
