@@ -422,7 +422,7 @@ void write_header_to_file(FILE *fw){
         // no space is allowed!
         // fprintf(fw, "x0,x1,x2,x3,uMs_cmd,uTs_cmd,iMs_cmd,iMs,iTs_cmd,iTs\n");
         // fprintf(fw, "x0,x1,x2,x3,ual_cmd,ube_cmd,ial_cmd,ial,ibe_cmd,ibe,CTRL.ids_pose,CTRL.iqs_pose,CTRL.ids_nese,CTRL.iqs_nese\n");
-        fprintf(fw, "x0,x1,x2,x3,ial_cmd,ial,ibe_cmd,ibe,CTRL.ids_pose,CTRL.iqs_pose,CTRL.ids_nese,CTRL.iqs_nese,CTRL.pi_iD_PR_pose.i_state,CTRL.pi_iQ_PR_pose.i_state,CTRL.pi_iD_PR_nese.i_state,CTRL.pi_iQ_PR_nese.i_state\n");
+        fprintf(fw, "x0,x1,x2,x3,ual_cmd,ube_cmd,ial_cmd,ial,ibe_cmd,ibe,CTRL.ids_pose,CTRL.iqs_pose,CTRL.ids_nese,CTRL.iqs_nese,CTRL.pi_iD_PR_pose.i_state,CTRL.pi_iQ_PR_pose.i_state,CTRL.pi_iD_PR_nese.i_state,CTRL.pi_iQ_PR_nese.i_state\n");
     #endif
 
     {
@@ -452,8 +452,9 @@ void write_data_to_file(FILE *fw){
                 //         ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3],
                 //         CTRL.ual_cmd, CTRL.ube_cmd, CTRL.ial_cmd, IS_C(0), CTRL.ibe_cmd, IS_C(1)
                 //         );
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                         ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3],
+                        CTRL.ual_cmd, CTRL.ube_cmd,
                         CTRL.ial_cmd, IS_C(0), CTRL.ibe_cmd, IS_C(1),
                         CTRL.ids_pose, CTRL.iqs_pose, CTRL.ids_nese, CTRL.iqs_nese,
                         CTRL.pi_iD_PR_pose.i_state,CTRL.pi_iQ_PR_pose.i_state,

@@ -122,6 +122,9 @@ void CTRL_init(){
     CTRL.pi_iQ_PR_nese.i_limit = 650; //350.0; // unit: Volt
 
     printf("Kp_cur=%g, Ki_cur=%g\n", CTRL.pi_iD.Kp, CTRL.pi_iD.Ki);
+
+
+    CTRL.count_currentSteadyState = 0;
 }
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed or measured speed
@@ -192,6 +195,26 @@ double regulator(struct PI_Reg *reg, double error, int bool_turn_on){
     }
     return temp;
 }
+#define DESIGN_0p2 (0.2)
+#define DESIGN_0p5 (0.5)
+#define DESIGN_1Edash2 (1e-2)
+#define CURRENT_STEADY_THRESHOLD DESIGN_1Edash2
+#define CURRENT_STEADY_SPAN (DESIGN_0p2/TS)
+int reachSteadyStateCurrent(double ia_cmd, double ia_c){
+
+    if(fabs(ia_cmd-ia_c) < CURRENT_STEADY_THRESHOLD){
+        // Avoid to collect over-shoot data
+        CTRL.count_currentSteadyState += 1;
+
+        if(CTRL.count_currentSteadyState>CURRENT_STEADY_SPAN){
+            return true; // 一次判断稳态，永远返回true。当然，也可以设计成回差的形式——达到稳态后开始判断是否脱离稳态。
+        }
+    }
+    return false;
+}
+#define INDUCTANCE_ID_FREQUENCY 50.0 // Hz
+#define STEADY_STATE_CYCLES 20 // 0.4 s
+#define NUMBER_OF_SS_SAMPLING (STEADY_STATE_CYCLES/INDUCTANCE_ID_FREQUENCY/TS)
 void selfcommissioning(){
 
     #define RATED_VOLTAGE 200 // Vrms (line-to-line)
@@ -226,6 +249,15 @@ void selfcommissioning(){
         bool_inductance_identification = true;
         d_axis_current_amplitude_used_in_inductance_identification = 0.01*RATED_CURRENT;
         q_axis_current_amplitude_used_in_inductance_identification = 0.00*RATED_CURRENT;
+
+        if(reachSteadyStateCurrent(CTRL.ial_cmd, IS_C(0))){
+            CTRL.ial_average += IS_C(0);
+            CTRL.count_inductance_id_data += 1;
+            if(CTRL.count_inductance_id_data > NUMBER_OF_SS_SAMPLING){
+                CTRL.Ld_cal = 
+            }
+        }
+
     }else{
         CTRL.ial_cmd = 0;
         CTRL.ibe_cmd = 0;
@@ -242,24 +274,24 @@ void selfcommissioning(){
     vbe    = regulator(&CTRL.pi_iQ, IS_C(1) - CTRL.ibe_cmd, bool_beta_axis_turn_on);
 
     // 正序测量电流
-    CTRL.ids_pose = AB2M(IS_C(0), IS_C(1), cos(50*2*M_PI*CTRL.timebase), sin(50*2*M_PI*CTRL.timebase));
-    CTRL.iqs_pose = AB2T(IS_C(0), IS_C(1), cos(50*2*M_PI*CTRL.timebase), sin(50*2*M_PI*CTRL.timebase));
+    CTRL.ids_pose = AB2M(IS_C(0), IS_C(1), cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
+    CTRL.iqs_pose = AB2T(IS_C(0), IS_C(1), cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
 
     vd_PR_pose = regulator(&CTRL.pi_iD_PR_pose, CTRL.ids_pose - d_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
     vq_PR_pose = regulator(&CTRL.pi_iQ_PR_pose, CTRL.iqs_pose - q_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
 
     // 负序测量电流
-    CTRL.ids_nese = AB2M(IS_C(0), IS_C(1), cos(-50*2*M_PI*CTRL.timebase), sin(-50*2*M_PI*CTRL.timebase));
-    CTRL.iqs_nese = AB2T(IS_C(0), IS_C(1), cos(-50*2*M_PI*CTRL.timebase), sin(-50*2*M_PI*CTRL.timebase));
+    CTRL.ids_nese = AB2M(IS_C(0), IS_C(1), cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
+    CTRL.iqs_nese = AB2T(IS_C(0), IS_C(1), cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
 
     vd_PR_nese = regulator(&CTRL.pi_iD_PR_nese, CTRL.ids_nese - d_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
     vq_PR_nese = regulator(&CTRL.pi_iQ_PR_nese, CTRL.iqs_nese - q_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
 
     double val_PR_pose, vbe_PR_pose, val_PR_nese, vbe_PR_nese;
-    val_PR_pose = MT2A(vd_PR_pose, vq_PR_pose, cos(50*2*M_PI*CTRL.timebase), sin(50*2*M_PI*CTRL.timebase));
-    vbe_PR_pose = MT2B(vd_PR_pose, vq_PR_pose, cos(50*2*M_PI*CTRL.timebase), sin(50*2*M_PI*CTRL.timebase));
-    val_PR_nese = MT2A(vd_PR_nese, vq_PR_nese, cos(-50*2*M_PI*CTRL.timebase), sin(-50*2*M_PI*CTRL.timebase));
-    vbe_PR_nese = MT2B(vd_PR_nese, vq_PR_nese, cos(-50*2*M_PI*CTRL.timebase), sin(-50*2*M_PI*CTRL.timebase));
+    val_PR_pose = MT2A(vd_PR_pose, vq_PR_pose, cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
+    vbe_PR_pose = MT2B(vd_PR_pose, vq_PR_pose, cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
+    val_PR_nese = MT2A(vd_PR_nese, vq_PR_nese, cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
+    vbe_PR_nese = MT2B(vd_PR_nese, vq_PR_nese, cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
 
     // Current loop decoupling (skipped for now)
     CTRL.ual_cmd = val + val_PR_pose + val_PR_nese;
@@ -274,7 +306,6 @@ void selfcommissioning(){
     CTRL.ual = CTRL.ual_cmd;
     CTRL.ube = CTRL.ube_cmd;
 }
-
 #endif
 
 

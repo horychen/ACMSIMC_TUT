@@ -75,6 +75,8 @@ struct ControllerForExperiment{
     double iqs_pose;
     double ids_nese;
     double iqs_nese;
+
+    int count_currentSteadyState;
 };
 #endif
 extern struct ControllerForExperiment CTRL;
