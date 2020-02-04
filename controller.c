@@ -45,11 +45,11 @@ void CTRL_init(){
     CTRL.Js = ACM.Js;
     CTRL.Js_inv = 1.0 / CTRL.Js;
 
-    CTRL.omg_fb = 0.0;
-    CTRL.ial_fb = 0.0;
-    CTRL.ibe_fb = 0.0;
-    CTRL.psi_mu_al_fb = 0.0;
-    CTRL.psi_mu_be_fb = 0.0;
+    CTRL.omg__fb = 0.0;
+    CTRL.ial__fb = 0.0;
+    CTRL.ibe__fb = 0.0;
+    CTRL.psi_mu_al__fb = 0.0;
+    CTRL.psi_mu_be__fb = 0.0;
 
     CTRL.rotor_flux_cmd = 0.0; // id=0 control
 
@@ -61,9 +61,9 @@ void CTRL_init(){
 
     CTRL.omega_syn = 0.0;
 
-    CTRL.theta_d = 0.0;
-    CTRL.id = 0.0;
-    CTRL.iq = 0.0;
+    CTRL.theta_d__fb = 0.0;
+    CTRL.id__fb = 0.0;
+    CTRL.iq__fb = 0.0;
     CTRL.ud_cmd = 0.0;
     CTRL.uq_cmd = 0.0;
     CTRL.id_cmd = 0.0;
@@ -93,59 +93,52 @@ void CTRL_init(){
     printf("Kp_cur=%g, Ki_cur=%g\n", CTRL.PID_id.Kp, CTRL.PID_id.Ki);
 }
 void control(double speed_cmd, double speed_cmd_dot){
-    // Input 1 is feedback: estimated speed or measured speed
+    // Input 1 is feedback: estimated speed/position or measured speed/position
     #if SENSORLESS_CONTROL
         getch("Not Implemented");
-        // CTRL.omg_fb    ;
+        // CTRL.omg__fb    ;
         // CTRL.omega_syn ;
     #else
-        CTRL.omg_fb = sm.omg_elec;
+        // from measurement() in main.c
+        CTRL.omg__fb = sm.omg_elec;
+        CTRL.theta_d__fb = sm.theta_d;
     #endif
+
     // Input 2 is feedback: measured current 
-    CTRL.ial_fb = IS_C(0);
-    CTRL.ibe_fb = IS_C(1);
-    // Input 3 is the rotor d-axis position
-    #if SENSORLESS_CONTROL
-        getch("Not Implemented");
-    #else
-        CTRL.theta_d = sm.theta_d;
-    #endif
+    CTRL.ial__fb = IS_C(0);
+    CTRL.ibe__fb = IS_C(1);
 
-
-
+    // Input 3 is the flux linkage command 
     #if CONTROL_STRATEGY == NULL_D_AXIS_CURRENT_CONTROL
-        // Flux (linkage) command
         CTRL.rotor_flux_cmd = 0.0;
+        CTRL.cosT = cos(CTRL.theta_d__fb); 
+        CTRL.sinT = sin(CTRL.theta_d__fb);
+    #else
+        getch("Not Implemented");        
     #endif
 
-
-
-    // M-axis current command
+    // d-axis current command
     CTRL.id_cmd = CTRL.rotor_flux_cmd / CTRL.Ld;
 
-    // T-axis current command
+    // q-axis current command
     static int vc_count = 0;
     if(vc_count++==VC_LOOP_CEILING*DOWN_FREQ_EXE_INVERSE){ 
         vc_count = 0;
-        CTRL.omg_ctrl_err = CTRL.omg_fb - speed_cmd*RPM_2_RAD_PER_SEC;
+        CTRL.omg_ctrl_err = CTRL.omg__fb - speed_cmd*RPM_2_RAD_PER_SEC;
         CTRL.iq_cmd = - PID(&CTRL.PID_speed, CTRL.omg_ctrl_err);
 
+        // for plot
         CTRL.speed_ctrl_err = CTRL.omg_ctrl_err * RAD_PER_SEC_2_RPM;
     }
 
-    #if CONTROL_STRATEGY == NULL_D_AXIS_CURRENT_CONTROL
-        CTRL.cosT = cos(CTRL.theta_d); 
-        CTRL.sinT = sin(CTRL.theta_d);
-    #endif
+    // Measured current in d-q frame
+    CTRL.id__fb = AB2M(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
+    CTRL.iq__fb = AB2T(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
 
-    // Measured current in M-T frame
-    CTRL.id = AB2M(CTRL.ial_fb, CTRL.ibe_fb, CTRL.cosT, CTRL.sinT);
-    CTRL.iq = AB2T(CTRL.ial_fb, CTRL.ibe_fb, CTRL.cosT, CTRL.sinT);
-
-    // Voltage command in M-T frame
+    // Voltage command in d-q frame
     double vd, vq;
-    vd = - PID(&CTRL.PID_id, CTRL.id-CTRL.id_cmd);
-    vq = - PID(&CTRL.PID_iq, CTRL.iq-CTRL.iq_cmd);
+    vd = - PID(&CTRL.PID_id, CTRL.id__fb-CTRL.id_cmd);
+    vq = - PID(&CTRL.PID_iq, CTRL.iq__fb-CTRL.iq_cmd);
 
     // Current loop decoupling (skipped for now)
     CTRL.ud_cmd = vd;

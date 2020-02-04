@@ -31,11 +31,11 @@ struct ControllerForExperiment{
     double Js;
     double Js_inv;
 
-    double omg_fb;
-    double ial_fb;
-    double ibe_fb;
-    double psi_mu_al_fb;
-    double psi_mu_be_fb;
+    double omg__fb;
+    double ial__fb;
+    double ibe__fb;
+    double psi_mu_al__fb;
+    double psi_mu_be__fb;
 
     double rotor_flux_cmd;
 
@@ -47,9 +47,9 @@ struct ControllerForExperiment{
 
     double omega_syn;
 
-    double theta_d;
-    double id;
-    double iq;
+    double theta_d__fb;
+    double id__fb;
+    double iq__fb;
     double ud_cmd;
     double uq_cmd;
     double id_cmd;

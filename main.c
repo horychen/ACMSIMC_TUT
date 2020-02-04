@@ -188,17 +188,17 @@ int main(){
     write_header_to_file(fw);
 
     /* MAIN LOOP */
-    clock_t  begin, end;
+    clock_t begin, end;
     begin = clock();
     int _; // _ for the outer iteration
-    int dfe=0; // dfe for down frequency execution
+    int dfe_counter=0; // dfe_counter for down frequency execution
     for(_=0;_<NUMBER_OF_STEPS;++_){
 
-        /* Command and Load Torque */
+        /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
-        // ACM.Tload = 5 * sign(ACM.rpm); 
 
+        /* Load Torque */
         ACM.Tload = 5 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
 
@@ -208,8 +208,8 @@ int main(){
             break;
         }
 
-        if(++dfe==DOWN_FREQ_EXE){
-            dfe = 0;
+        if(++dfe_counter == DOWN_FREQ_EXE){
+            dfe_counter = 0;
 
             /* Time */
             CTRL.timebase += TS;
@@ -260,7 +260,7 @@ void write_data_to_file(FILE *fw){
             j=0;
             fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
-                    CTRL.id_cmd, CTRL.id-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
+                    CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
                     ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf)
                     );
         }
