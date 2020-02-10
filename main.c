@@ -10,7 +10,7 @@ double fabs(double x){
 struct SynchronousMachineSimulated ACM;
 void Machine_init(){
 
-    ACM.Ts  = MACHINE_TS;
+    ACM.Ts = MACHINE_TS;
 
     int i;
     for(i=0;i<NUMBER_OF_STATES;++i){
@@ -184,7 +184,7 @@ int main(){
     ob_init();
 
     FILE *fw;
-    fw = fopen("algorithm.dat", "w");
+    fw = fopen(DATA_FILE_NAME, "w");
     write_header_to_file(fw);
 
     /* MAIN LOOP */
@@ -208,10 +208,10 @@ int main(){
             break;
         }
 
-        if(++dfe_counter == DOWN_FREQ_EXE){
+        if(++dfe_counter == TS_UPSAMPLING_FREQ_EXE_INVERSE){
             dfe_counter = 0;
 
-            /* Time */
+            /* Time in DSP */
             CTRL.timebase += TS;
 
             measurement();
@@ -229,7 +229,7 @@ int main(){
     fclose(fw);
 
     /* Fade out */
-    system("python ./ACMPlot.py"); 
+    // system("python ./ACMPlot.py"); 
     // getch();
     // system("pause");
     // system("exit");
@@ -239,13 +239,13 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position[rad]),ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad]\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad]\n");
 
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
-        fprintf(fw2, "TS,DOWN_SAMPLE\n");
-        fprintf(fw2, "%g, %d\n", TS, DOWN_SAMPLE);
+        fprintf(fw2, "TS,DOWN_SAMPLE,DATA_FILE_NAME\n");
+        fprintf(fw2, "%g, %d, %s\n", TS, DOWN_SAMPLE, DATA_FILE_NAME);
         fclose(fw2);
     }
 }

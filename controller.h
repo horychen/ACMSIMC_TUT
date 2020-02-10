@@ -2,14 +2,13 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#define VC_LOOP_CEILING 40
 
 struct PID_Reg{
-   double   Kp;
-   double   Ti;
-   double   Ki; // Ki = Kp/Ti*TS
-   double   i_state;
-   double   i_limit;
+   double   Kp; // Proportional gain
+   double   Ti; // Integral time constant
+   double   Ki; // Ki = Kp/Ti*TS (note TS is included here for ease of discrete implementaion)
+   double   i_state; // Integral internal state
+   double   i_limit; // Output limit
 };
 double PID(struct PID_Reg *r, double err);
 

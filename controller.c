@@ -70,27 +70,25 @@ void CTRL_init(){
     CTRL.iq_cmd = 0.0;
 
     // ver. IEMDC
-    CTRL.PID_speed.Kp = 0.5; 
-    CTRL.PID_speed.Ti = 5;
-    CTRL.PID_speed.Ki = (CTRL.PID_speed.Kp*4.77) / CTRL.PID_speed.Ti * (TS*VC_LOOP_CEILING*DOWN_FREQ_EXE_INVERSE);
+    CTRL.PID_speed.Kp = SPEED_LOOP_PID_PROPORTIONAL_GAIN;
+    CTRL.PID_speed.Ti = SPEED_LOOP_PID_INTEGRAL_TIME_CONSTANT;
+    CTRL.PID_speed.Ki = CTRL.PID_speed.Kp / CTRL.PID_speed.Ti * (TS*SPEED_LOOP_CEILING); // 4.77 = 1 / (npp*1/60*2*pi)
+    CTRL.PID_speed.i_limit = SPEED_LOOP_LIMIT_NEWTON_METER;
     CTRL.PID_speed.i_state = 0.0;
-    CTRL.PID_speed.i_limit = 8;
-
-    printf("Kp_omg=%g, Ki_omg=%g\n", CTRL.PID_speed.Kp, CTRL.PID_speed.Ki);
+    printf("Speed PID: Kp=%g, Ki=%g, limit=%g Nm\n", CTRL.PID_speed.Kp, CTRL.PID_speed.Ki/TS, CTRL.PID_speed.i_limit);
 
     CTRL.PID_id.Kp = 15; // cutoff frequency of 1530 rad/s
     CTRL.PID_id.Ti = 0.08;
     CTRL.PID_id.Ki = CTRL.PID_id.Kp/CTRL.PID_id.Ti*TS; // =0.025
     CTRL.PID_id.i_state = 0.0;
     CTRL.PID_id.i_limit = 650; //350.0; // unit: Volt
+    printf("Current PID: Kp=%g, Ki=%g, limit=%g V\n", CTRL.PID_id.Kp, CTRL.PID_id.Ki/TS, CTRL.PID_id.i_limit);
 
     CTRL.PID_iq.Kp = 15;
     CTRL.PID_iq.Ti = 0.08;
     CTRL.PID_iq.Ki = CTRL.PID_iq.Kp/CTRL.PID_iq.Ti*TS;
     CTRL.PID_iq.i_state = 0.0;
     CTRL.PID_iq.i_limit = 650; // unit: Volt, 350V->max 1300rpm
-
-    printf("Kp_cur=%g, Ki_cur=%g\n", CTRL.PID_id.Kp, CTRL.PID_id.Ki);
 }
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed/position or measured speed/position
@@ -122,7 +120,8 @@ void control(double speed_cmd, double speed_cmd_dot){
 
     // q-axis current command
     static int vc_count = 0;
-    if(vc_count++==VC_LOOP_CEILING*DOWN_FREQ_EXE_INVERSE){ 
+    if(vc_count++ == SPEED_LOOP_CEILING){
+        // velocity control loop execution frequency is 40 times slower than current control loop execution frequency
         vc_count = 0;
         CTRL.omg_ctrl_err = CTRL.omg__fb - speed_cmd*RPM_2_RAD_PER_SEC;
         CTRL.iq_cmd = - PID(&CTRL.PID_speed, CTRL.omg_ctrl_err);
