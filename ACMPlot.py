@@ -6,7 +6,8 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from collections import OrderedDict as O
 import pandas as pd
 # plot style
-style = np.random.choice(plt.style.available); print(style); plt.style.use('grayscale') # [u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
+style = np.random.choice(plt.style.available); print(style); 
+plt.style.use('ggplot') # ['grayscale', u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
 # plot setting
 mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.family'] = 'STIXGeneral'
@@ -24,15 +25,6 @@ textfont = {'family' : 'Times New Roman', #'serif',
             'weight' : 'normal',
             'size' : 11.5,}
 
-df_profiles = pd.read_csv(r"./algorithm.dat", na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
-df_info = pd.read_csv(r"./info.dat", na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
-
-no_samples = df_profiles.shape[0]
-no_traces  = df_profiles.shape[1]
-print(df_info, 'Simulated time: %g s.'%(no_samples * df_info['TS'].values[0] * df_info['DOWN_SAMPLE'].values[0]), 'Key list:', sep='\n')
-for key in df_profiles.keys():
-    print('\t', key)
-
 ######################
 # Plotting
 def get_axis(cNr):
@@ -49,7 +41,7 @@ def plot_key(ax, key, df):
     ax.plot(time, df[key].values, '-', lw=1)
     ax.set_ylabel(key, fontdict=font)
 
-def plot_it(ax, ylabel, d):
+def plot_it(ax, ylabel, d, time=None):
     count = 0
     for k, v in d.items():
         if count == 0:
@@ -66,18 +58,30 @@ def plot_it(ax, ylabel, d):
     # ax.set_xlim(0,35) # shared x
     # ax.set_ylim(0.85,1.45)
 
-time = np.arange(1, no_samples+1) * df_info['DOWN_SAMPLE'].values[0] * df_info['TS'].values[0]
+if __name__ == '__main__':
 
-ax_list = []
-for i in range(0, no_traces, 6):
-    ax_list += list(get_axis((1,6)))
+    df_info = pd.read_csv(r"./info.dat", na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
+    data_file_name = df_info['DATA_FILE_NAME'].values[0].strip()
+    df_profiles = pd.read_csv(data_file_name, na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
 
-for idx, key in enumerate(df_profiles.keys()):
-    plot_it(ax_list[idx], key, O([
-                                    (str(idx), df_profiles[key]),  
-                                    # (str(idx), df_profiles[key]),  
-                                    ]))
-plt.show()
-quit()
+    no_samples = df_profiles.shape[0]
+    no_traces  = df_profiles.shape[1]
+    print(df_info, 'Simulated time: %g s.'%(no_samples * df_info['TS'].values[0] * df_info['DOWN_SAMPLE'].values[0]), 'Key list:', sep='\n')
+    for key in df_profiles.keys():
+        print('\t', key)
+
+    time = np.arange(1, no_samples+1) * df_info['DOWN_SAMPLE'].values[0] * df_info['TS'].values[0]
+
+    ax_list = []
+    for i in range(0, no_traces, 6):
+        ax_list += list(get_axis((1,6)))
+
+    for idx, key in enumerate(df_profiles.keys()):
+        plot_it(ax_list[idx], key, O([
+                                        (str(idx), df_profiles[key]),  
+                                        # (str(idx), df_profiles[key]),  
+                                        ]), time)
+    plt.show()
+    quit()
 
 

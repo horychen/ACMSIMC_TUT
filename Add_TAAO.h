@@ -12,9 +12,9 @@
  * Except for type double             */ 
 #ifndef ADD_TAAO_H 
 #define ADD_TAAO_H 
-#if MACHINE_TYPE == INDUCTION_MACHINE &&  OBSERVER_APPLIED == TOTALLY_ADAPTIVE_OBSERVER 
+#if OBSERVER_APPLIED == TOTALLY_ADAPTIVE_OBSERVER 
 
- 
+
 #define TAAO_FLUX_COMMAND_VALUE (1.2) // 1.2 
 #define TAAO_FLUX_COMMAND_ON (false) 
 #define TIME_DIVISION_MULTIPLEXING (false) 

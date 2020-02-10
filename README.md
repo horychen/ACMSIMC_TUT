@@ -10,17 +10,18 @@ The benefit is that you can direct reuse the codes in DSP based motor drive.
 The numerical integration method is currently RK4, which is quite enough. 
 DoPri54 will be included in future version (including stiffness detection and variable step numerical integration).
 
-## Introduction to Current Branches:
-- [IM] master: combination of other branches, kept in a developing status in which I feel good.
+## Introduction to Current Branches (in time order):
 - [IM] vvvf: the skeleton with induction motor simulation and VVVF control.
 - [IM] foc: field oriented control (direct/indirect) with basic sensorless control.
-- [IM] animate: test the feature of waveform (results) animation.
+- [IM] animate: test the feature of waveform animation like an oscilloscope.
 - [PMSM] pmsm: id=0 control for interior permanent magnet synchronous motor.
 - [IM] vi_decouple: add voltage-current decoupling circuit for improved control performance during high speed reversal.
 - [IM] mras: model reference adaptive system based sensorless control (my 2017-Chen.Huang-Online paper).
 - [IM] \_femm: (This branch does not really belong here but I don't want to create a new repository for it...) It is about the design of the induction motor using free softwares as well as fitting the design to the equivalent circuit parameters for further control simulation.
 - [IM] saturation: include iron core saturation effect into the induction motor model simulation.
 - [Both] inverter_model: simple inverter modeling based on the paper 1996-Choi.Sul-Inverter.
+- [Both] master: contain all the features of the branches mentioned above. The master branch is not updated anymore from this point, because I realized that having both IM and PMSM codes in one place is a silly idea.
+- [PMSM] eemf: 
 
 ## Visualization
 - The plots are made using package matplotlib. 
@@ -41,8 +42,13 @@ DoPri54 will be included in future version (including stiffness detection and va
 
 ## Video Tutorials
 For unfamiliar users, I have been creating video tutorials. However, they are currently in Chinese. 
-In near future, tge Engligh version will be brought about.
-
 > If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
 > Please take a look at this link to [知乎](https://zhuanlan.zhihu.com/p/64445558).
 > In fact, now you can check out [my personal page](https://horychen.github.io) for a list of tutorial videos.
+
+In near future, the English version will be brought about. 
+
+**[Important Update]** I made a video in English to explain how to use C codes to simulate sensorless drive using the method from one of my papers ("Resistances and Speed Estimation in Sensorless Induction Motor Drives Using a Model with Known Regressors"). Here is the [link]() to it.
+Jiahao
+2020/02/10
+
