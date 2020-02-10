@@ -42,11 +42,13 @@ DoPri54 will be included in future version (including stiffness detection and va
 
 ## Video Tutorials
 For unfamiliar users, I have been creating video tutorials. However, they are currently in Chinese. 
-In near future, the Engligh version will be brought about. 
-
 > If you speak Chinese, I have a dedicated tutorial video on how to make this thing work from the ground up.
 > Please take a look at this link to [知乎](https://zhuanlan.zhihu.com/p/64445558).
 > In fact, now you can check out [my personal page](https://horychen.github.io) for a list of tutorial videos.
 
-**[Important Update]** I made a video in English to explain how to use C codes to simulate sensorless drive using the method from one of my papers ("Resistances and Speed Estimation in Sensorless Induction Motor Drives Using a Model with Known Regressors"). Here is the [link]() to it. 2020/02/10
+In near future, the English version will be brought about. 
 
+<!-- **[Important Update]** I made a video in English to explain how to use C codes to simulate sensorless drive using the method from one of my papers ("Resistances and Speed Estimation in Sensorless Induction Motor Drives Using a Model with Known Regressors"). Here is the [link]() to it.
+Jiahao
+2020/02/10
+ -->

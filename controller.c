@@ -77,18 +77,18 @@ void CTRL_init(){
     CTRL.PID_speed.i_state = 0.0;
     printf("Speed PID: Kp=%g, Ki=%g, limit=%g Nm\n", CTRL.PID_speed.Kp, CTRL.PID_speed.Ki/TS, CTRL.PID_speed.i_limit);
 
-    CTRL.PID_id.Kp = 15; // cutoff frequency of 1530 rad/s
-    CTRL.PID_id.Ti = 0.08;
+    CTRL.PID_id.Kp = CURRENT_LOOP_PID_PROPORTIONAL_GAIN; // cutoff frequency of 1530 rad/s
+    CTRL.PID_id.Ti = CURRENT_LOOP_PID_INTEGRAL_TIME_CONSTANT;
     CTRL.PID_id.Ki = CTRL.PID_id.Kp/CTRL.PID_id.Ti*TS; // =0.025
+    CTRL.PID_id.i_limit = CURRENT_LOOP_LIMIT_VOLTS; //350.0; // unit: Volt
     CTRL.PID_id.i_state = 0.0;
-    CTRL.PID_id.i_limit = 650; //350.0; // unit: Volt
     printf("Current PID: Kp=%g, Ki=%g, limit=%g V\n", CTRL.PID_id.Kp, CTRL.PID_id.Ki/TS, CTRL.PID_id.i_limit);
 
-    CTRL.PID_iq.Kp = 15;
-    CTRL.PID_iq.Ti = 0.08;
+    CTRL.PID_iq.Kp = CURRENT_LOOP_PID_PROPORTIONAL_GAIN;
+    CTRL.PID_iq.Ti = CURRENT_LOOP_PID_INTEGRAL_TIME_CONSTANT;
     CTRL.PID_iq.Ki = CTRL.PID_iq.Kp/CTRL.PID_iq.Ti*TS;
+    CTRL.PID_iq.i_limit = CURRENT_LOOP_LIMIT_VOLTS; // unit: Volt, 350V->max 1300rpm
     CTRL.PID_iq.i_state = 0.0;
-    CTRL.PID_iq.i_limit = 650; // unit: Volt, 350V->max 1300rpm
 }
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed/position or measured speed/position
