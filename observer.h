@@ -1,7 +1,10 @@
 #ifndef ADD_OBSERVER_H
 #define ADD_OBSERVER_H
 
-
+#define OB_COEF_G1    -1
+#define OB_COEF_G2    0 //0
+#define OB_COEF_ELL   1000 //1000
+#define OB_COEF_GAMMA 50
 
 
 /* Macro for External Access Interface */
@@ -11,6 +14,14 @@
 #define IS_C(X) sm.is_curr[X]
 #define US_P(X) sm.us_prev[X]
 #define IS_P(X) sm.is_prev[X]
+
+#define OB_EEMF_AL ob.eemf_al
+#define OB_EEMF_BE ob.eemf_be
+#define OB_POS     ob.theta_d
+#define OB_OMG     ob.xOmg
+#define OB_LD      ob.Ld
+#define OB_LQ      ob.Lq
+#define OB_R       ob.R
 
 struct SynchronousMachine{
     double us[2];
@@ -25,6 +36,7 @@ struct SynchronousMachine{
 
     double R;
     double Ld;
+    double Ld_inv;
     double Lq;
     double KE;
 
@@ -54,6 +66,20 @@ struct Observer{
     double eemf_al;
     double eemf_be;
     double eemf_q;
+
+    double xXi[2];
+    double xEEMF_dummy[2];
+    double xOmg;
+
+    double pll_constructed_eemf_error[2];
+
+    double DeltaL;
+    double SigmaL;
+
+    double g1;
+    double g2;
+    double ell;
+    double gamma;
 };
 extern struct Observer ob;
 

@@ -62,6 +62,7 @@ if __name__ == '__main__':
 
     df_info = pd.read_csv(r"./info.dat", na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
     data_file_name = df_info['DATA_FILE_NAME'].values[0].strip()
+    print(data_file_name)
     df_profiles = pd.read_csv(data_file_name, na_values = ['1.#QNAN', '-1#INF00', '-1#IND00'])
 
     no_samples = df_profiles.shape[0]

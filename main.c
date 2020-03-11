@@ -148,6 +148,7 @@ void measurement(){
     IS_C(0) = ACM.ial;
     IS_C(1) = ACM.ibe;
     sm.omg_elec = ACM.x[2];
+    sm.omg_mech = sm.omg_elec * sm.npp_inv;
     sm.theta_d = ACM.x[3];
     // sm.theta_r = sm.theta_d;
 }
@@ -185,6 +186,9 @@ int main(){
 
     FILE *fw;
     fw = fopen(DATA_FILE_NAME, "w");
+    printf("%s\n", DATA_FILE_NAME);
+    printf("%s\n", DATA_FILE_NAME);
+    printf("%s\n", DATA_FILE_NAME);    
     write_header_to_file(fw);
 
     /* MAIN LOOP */
@@ -193,6 +197,8 @@ int main(){
     int _; // _ for the outer iteration
     int dfe_counter=0; // dfe_counter for down frequency execution
     for(_=0;_<NUMBER_OF_STEPS;++_){
+
+        // printf("%d\n", _);
 
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
@@ -229,7 +235,7 @@ int main(){
     fclose(fw);
 
     /* Fade out */
-    // system("python ./ACMPlot.py"); 
+    system("python ./ACMPlot.py"); 
     // getch();
     // system("pause");
     // system("exit");
@@ -239,8 +245,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad]\n");
-
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),ob.xEEMF_dummy[0],error(xEEMF_dummy),OB_OMG\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -258,10 +263,11 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
-                    ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf)
+                    ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
+                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, ob.xEEMF_dummy[1], OB_EEMF_BE-ob.xEEMF_dummy[1], OB_OMG
                     );
         }
     }

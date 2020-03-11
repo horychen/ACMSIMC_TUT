@@ -93,9 +93,11 @@ void CTRL_init(){
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed/position or measured speed/position
     #if SENSORLESS_CONTROL
-        getch("Not Implemented");
+        // getch("Not Implemented");
         // CTRL.omg__fb    ;
         // CTRL.omega_syn ;
+        CTRL.omg__fb     = OB_OMG;
+        CTRL.theta_d__fb = OB_POS;
     #else
         // from measurement() in main.c
         CTRL.omg__fb = sm.omg_elec;
@@ -158,6 +160,8 @@ void cmd_fast_speed_reversal(double timebase, double instant, double interval, d
         ACM.rpm_cmd = -rpm_cmd;
     }else if(timebase > instant){
         ACM.rpm_cmd = rpm_cmd;
+    }else{
+        ACM.rpm_cmd = 50; // default initial command
     }
 }
 
