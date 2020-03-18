@@ -21,7 +21,9 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [IM] saturation: include iron core saturation effect into the induction motor model simulation.
 - [Both] inverter_model: simple inverter modeling based on the paper 1996-Choi.Sul-Inverter.
 - [Both] master: contain all the features of the branches mentioned above. The master branch is not updated anymore from this point, because I realized that having both IM and PMSM codes in one place is a silly idea.
-- [PMSM] eemf: 
+- [PMSM] commissioning_pmsm: (under developing) self-commissioning procedure for permanent magnet motor.
+- [PMSM] eemf: (still debugging) sensorless control based on extended emf method proposed by Zhiqian Chen et al. (2003). Sensorless open loop works but closed-loop has problems.
+
 
 ## Visualization
 - The plots are made using package matplotlib. 
