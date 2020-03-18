@@ -203,7 +203,7 @@ int main(){
 
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
+        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
         // ACM.rpm_cmd = 500;
         // if(CTRL.timebase>10){
         //     ACM.rpm_cmd = 2000;
@@ -212,7 +212,7 @@ int main(){
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
-        ACM.Tload = 0 * sign(ACM.rpm);
+        ACM.Tload = 2 * sign(ACM.rpm);
 
         /* Simulated ACM */
         if(machine_simulation()){ 

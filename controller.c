@@ -100,7 +100,7 @@ void control(double speed_cmd, double speed_cmd_dot){
         CTRL.theta_d__fb = OB_POS;
     #else
         // from measurement() in main.c
-        CTRL.omg__fb = sm.omg_elec;
+        CTRL.omg__fb     = sm.omg_elec;
         CTRL.theta_d__fb = sm.theta_d;
     #endif
 
@@ -155,13 +155,13 @@ void control(double speed_cmd, double speed_cmd_dot){
 /* Command */
 void cmd_fast_speed_reversal(double timebase, double instant, double interval, double rpm_cmd){
     if(timebase > instant+2*interval){
-        ACM.rpm_cmd = 1*150 + rpm_cmd;
+        ACM.rpm_cmd = 1*500 + rpm_cmd;
     }else if(timebase > instant+interval){
-        ACM.rpm_cmd = 1*150 + -rpm_cmd;
+        ACM.rpm_cmd = 1*500 + -rpm_cmd;
     }else if(timebase > instant){
-        ACM.rpm_cmd = 1*150 + rpm_cmd;
+        ACM.rpm_cmd = 1*500 + rpm_cmd;
     }else{
-        ACM.rpm_cmd = 50; // default initial command
+        ACM.rpm_cmd = 200; // default initial command
     }
 }
 

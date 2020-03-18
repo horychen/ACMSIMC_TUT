@@ -1,9 +1,9 @@
 #ifndef ADD_OBSERVER_H
 #define ADD_OBSERVER_H
 
-#define OB_COEF_K1    (50)
-#define OB_COEF_K2    (5000)
-#define OB_COEF_GAMMA 5e7
+#define OB_COEF_K1    (1000)
+#define OB_COEF_K2    (20000)
+#define OB_COEF_GAMMA 1e8
 
 /* Macro for External Access Interface */
 #define US(X) sm.us[X]
