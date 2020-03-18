@@ -71,8 +71,6 @@ void ob_init(){
 #define NUMBER_OF_EEMF_STATES 5
 void rhs_func_eemf(double *xxn, double *xXi, double *xEEMF_dummy, double xOmg, double hs){
 
-    // printf("%g, %g, %g\n", xXi[0], xEEMF_dummy[0], xOmg);
-
     #define R      ob.R
     #define LD     sm.Ld
     #define LD_INV sm.Ld_inv
@@ -187,17 +185,21 @@ void rk4_eemf(double hs){
     ob.eemf_be  = ob.xXi[1] + ob.g1*IS(1);
     ob.omg_elec = ob.xOmg;
     ob.omg_mech = ob.omg_elec * sm.npp_inv;
-    // ob.theta_d  = atan2(-ob.eemf_al/sign(ob.omg_elec), 
-    //                      ob.eemf_be/sign(ob.omg_elec));
-    if(ob.omg_elec==0){
-        ob.theta_d = 0.0;
-    }else{
-        ob.theta_d = atan2(-ob.eemf_al/sign(ob.omg_elec), 
-                            ob.eemf_be/sign(ob.omg_elec));
-    }
+    // ob.theta_d  = atan2(-ob.eemf_al, 
+    //                      ob.eemf_be); // 180 deg shift when speed is negative
+    // ob.theta_d  = atan2(-ob.eemf_al*sign(ob.omg_elec), 
+    //                      ob.eemf_be*sign(ob.omg_elec));
+    ob.theta_d  = atan2(-ob.eemf_al*sign(ob.xOmg), 
+                         ob.eemf_be*sign(ob.xOmg));
 }
 
 void observation(){
+
+    ob.g1 = OB_COEF_G1;
+    // if(CTRL.timebase>2){
+    //     ob.g1 = -fabs(OB_OMG)*sm.Ld*2;
+    // }
+    OB_OMG = sm.omg_elec;
 
     /* OBSERVATION */
     rk4_eemf(TS); 

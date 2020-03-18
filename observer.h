@@ -1,11 +1,10 @@
 #ifndef ADD_OBSERVER_H
 #define ADD_OBSERVER_H
 
-#define OB_COEF_G1    -1
-#define OB_COEF_G2    0 //0
-#define OB_COEF_ELL   1000 //1000
-#define OB_COEF_GAMMA 50
-
+#define OB_COEF_G1    (-fabs(sm.omg_elec)*sm.Ld*10) // Initial value
+#define OB_COEF_G2    0
+#define OB_COEF_ELL   1000 // 100 //2000
+#define OB_COEF_GAMMA 5000 // 0.2 //500
 
 /* Macro for External Access Interface */
 #define US(X) sm.us[X]

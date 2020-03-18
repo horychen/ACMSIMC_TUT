@@ -129,6 +129,7 @@ int machine_simulation(){
     ACM.eemf_q  = (ACM.Ld-ACM.Lq) * (ACM.omg_elec*ACM.id - ACM.x_dot[1]) + ACM.omg_elec*ACM.KE;
     ACM.eemf_al = ACM.eemf_q * -sin(ACM.theta_d);
     ACM.eemf_be = ACM.eemf_q *  cos(ACM.theta_d);
+    // ACM.theta_d__eemf = atan2(-ACM.eemf_al, ACM.eemf_be);
     ACM.theta_d__eemf = atan2(-ACM.eemf_al*sign(ACM.omg_elec), ACM.eemf_be*sign(ACM.omg_elec));
 
     // detect bad simulation
@@ -203,10 +204,15 @@ int main(){
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
+        // ACM.rpm_cmd = 500;
+        // if(CTRL.timebase>10){
+        //     ACM.rpm_cmd = 2000;
+        // }
 
         /* Load Torque */
-        ACM.Tload = 5 * sign(ACM.rpm); // No-load test
+        // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
+        ACM.Tload = 2 * sign(ACM.rpm);
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -245,7 +251,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),ob.xEEMF_dummy[0],error(xEEMF_dummy),OB_OMG\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),ob.xEEMF_dummy[0],error(xEEMF_dummy),OB_OMG,er_omg\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -263,11 +269,11 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
                     ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
-                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, ob.xEEMF_dummy[1], OB_EEMF_BE-ob.xEEMF_dummy[1], OB_OMG
+                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, ob.xEEMF_dummy[1], OB_EEMF_BE-ob.xEEMF_dummy[1], OB_OMG, ACM.omg_elec-OB_OMG
                     );
         }
     }
