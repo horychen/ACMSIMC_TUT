@@ -39,8 +39,8 @@ void CTRL_init(){
     CTRL.Ld = ACM.Ld;
     CTRL.Lq = ACM.Lq;
 
-    CTRL.Tload = 0.0;
-    CTRL.rpm_cmd = 0.0;
+    // CTRL.Tload = 0.0;
+    // CTRL.rpm_cmd = 0.0;
 
     CTRL.Js = ACM.Js;
     CTRL.Js_inv = 1.0 / CTRL.Js;
@@ -155,11 +155,11 @@ void control(double speed_cmd, double speed_cmd_dot){
 /* Command */
 void cmd_fast_speed_reversal(double timebase, double instant, double interval, double rpm_cmd){
     if(timebase > instant+2*interval){
-        ACM.rpm_cmd = 0*150 + rpm_cmd;
+        ACM.rpm_cmd = 1*150 + rpm_cmd;
     }else if(timebase > instant+interval){
-        ACM.rpm_cmd = 0*150 + -rpm_cmd;
+        ACM.rpm_cmd = 1*150 + -rpm_cmd;
     }else if(timebase > instant){
-        ACM.rpm_cmd = 0*150 + rpm_cmd;
+        ACM.rpm_cmd = 1*150 + rpm_cmd;
     }else{
         ACM.rpm_cmd = 50; // default initial command
     }

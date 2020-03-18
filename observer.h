@@ -1,10 +1,9 @@
 #ifndef ADD_OBSERVER_H
 #define ADD_OBSERVER_H
 
-#define OB_COEF_G1    (-fabs(sm.omg_elec)*sm.Ld*10) // Initial value
-#define OB_COEF_G2    0
-#define OB_COEF_ELL   1000 // 100 //2000
-#define OB_COEF_GAMMA 5000 // 0.2 //500
+#define OB_COEF_K1    (50)
+#define OB_COEF_K2    (5000)
+#define OB_COEF_GAMMA 5e7
 
 /* Macro for External Access Interface */
 #define US(X) sm.us[X]
@@ -52,8 +51,11 @@ struct Observer{
 
     double R;
     double Ld;
+    double Ld_inv;
     double Lq;
     double KE; // psi_PM;
+
+    double DeltaL;
 
     double Js;
     double Js_inv;
@@ -64,21 +66,28 @@ struct Observer{
 
     double eemf_al;
     double eemf_be;
-    double eemf_q;
 
-    double xXi[2];
-    double xEEMF_dummy[2];
+
+
+    double xPsi[2];
+    double xChi[2];
+
+    double xEta[2];
+    double xVarSigma[2];
+
+    double xUpsilon[2];
+    double xZeta[2];
+
     double xOmg;
 
-    double pll_constructed_eemf_error[2];
 
-    double DeltaL;
-    double SigmaL;
+    double output_error[2];
+    double output_error_eff[2];
 
-    double g1;
-    double g2;
-    double ell;
-    double gamma;
+    double k1;
+    double k2;
+    double gamma_omega;
+
 };
 extern struct Observer ob;
 
@@ -88,3 +97,4 @@ void ob_init();
 void observation();
 
 #endif
+

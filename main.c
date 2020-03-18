@@ -212,7 +212,7 @@ int main(){
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
-        ACM.Tload = 2 * sign(ACM.rpm);
+        ACM.Tload = 0 * sign(ACM.rpm);
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -251,7 +251,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),ob.xEEMF_dummy[0],error(xEEMF_dummy),OB_OMG,er_omg\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -269,11 +269,11 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
                     ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
-                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, ob.xEEMF_dummy[1], OB_EEMF_BE-ob.xEEMF_dummy[1], OB_OMG, ACM.omg_elec-OB_OMG
+                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, OB_OMG, ACM.omg_elec-OB_OMG
                     );
         }
     }

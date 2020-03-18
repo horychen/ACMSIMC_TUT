@@ -24,8 +24,8 @@ struct ControllerForExperiment{
     double Ld;
     double Lq;
 
-    double Tload;
-    double rpm_cmd;
+    // double Tload;
+    // double rpm_cmd;
 
     double Js;
     double Js_inv;
