@@ -45,7 +45,9 @@ DoPri54 will be included in future version (including stiffness detection and va
 ## Video Tutorials
 For unfamiliar users, I have been creating video tutorials. However, they are currently in Chinese. 
 > *See [my Bilibili space](https://space.bilibili.com/7132537) (ACTIVELY UPDATED).*
+> 
 > Also take a look at this link to [知乎](https://zhuanlan.zhihu.com/p/64445558) (not acvtively updated).
+> 
 > Also check out [my personal page](https://horychen.github.io) for a list of tutorial videos (not acvtively updated). 
 
 In near future, the English version will be brought about. But I would like to do it in high quality so I procrastinate to do so.
