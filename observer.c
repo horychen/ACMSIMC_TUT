@@ -281,6 +281,8 @@ void observation(){
     // }
     // OB_OMG = sm.omg_elec;
 
+    ob.k2 = (4*20000) * ACM.rpm_cmd / 1500;
+
     /* OBSERVATION */
     rk4_eda(TS); 
 
