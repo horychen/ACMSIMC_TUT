@@ -2,7 +2,7 @@
 #define ADD_OBSERVER_H
 
 #define OB_COEF_K1    (1*1000)   //(10*1000) 
-#define OB_COEF_K2    (2*20000)  //(10*20000)
+#define OB_COEF_K2    (3*20000)  //(10*20000)
 #define OB_COEF_GAMMA (0.5*1e8)   //(160*1e8) 
 
 /* Macro for External Access Interface */
