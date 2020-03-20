@@ -260,14 +260,14 @@ void rk4_eda(double hs){
     // EEMF
     ob.eemf_al  = -ob.Ld * ob.xOmg *-IS(1) - ob.xChi[0];
     ob.eemf_be  = -ob.Ld * ob.xOmg * IS(0) - ob.xChi[1];
+    // ob.theta_d  = atan2(-ob.eemf_al,  
+    //                      ob.eemf_be); // 180 deg shift in rotor position when speed is negative.
     if(ob.xOmg == 0){ // 当xOmg恒为零时，用转速的指令的正负校正反转180度转子位置角度差
-        // ob.theta_d  = atan2(-ob.eemf_al,  
-        //                      ob.eemf_be);
         ob.theta_d  = atan2(-ob.eemf_al*sign(ACM.rpm_cmd), 
                              ob.eemf_be*sign(ACM.rpm_cmd));
     }else{
         ob.theta_d  = atan2(-ob.eemf_al*sign(ob.xOmg), 
-                             ob.eemf_be*sign(ob.xOmg));
+                             ob.eemf_be*sign(ob.xOmg)); // It seems very important to use sign(ob.xOmg) instead of sign(ACM.rpm_cmd) or else starting-up may be oscillating.
     }
     ob.omg_elec = ob.xOmg;
     ob.omg_mech = ob.omg_elec * sm.npp_inv;

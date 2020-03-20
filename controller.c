@@ -161,7 +161,7 @@ void cmd_fast_speed_reversal(double timebase, double instant, double interval, d
     }else if(timebase > instant){
         ACM.rpm_cmd = 1*1500 + rpm_cmd;
     }else{
-        ACM.rpm_cmd = 200; // default initial command
+        ACM.rpm_cmd = 20; // default initial command
     }
 }
 
