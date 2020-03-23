@@ -12,7 +12,15 @@ void sm_init(){
         sm.us_curr[i] = 0;
         sm.is_curr[i] = 0;
         sm.us_prev[i] = 0;
-        sm.is_prev[i] = 0;        
+        sm.is_prev[i] = 0;
+        sm.is_lpf[i]  = 0;
+        sm.is_hpf[i]  = 0;
+        sm.is_bpf[i]  = 0;
+
+        sm.current_lpf_register[i] = 0;
+        sm.current_hpf_register[i] = 0;
+        sm.current_bpf_register1[i] = 0;
+        sm.current_bpf_register2[i] = 0;
     }
 
     sm.npp     = PMSM_NUMBER_OF_POLE_PAIRS;

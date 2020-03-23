@@ -13,6 +13,10 @@
 #define US_P(X) sm.us_prev[X]
 #define IS_P(X) sm.is_prev[X]
 
+#define IS_LPF(X) sm.is_lpf[X]
+#define IS_HPF(X) sm.is_hpf[X]
+#define IS_BPF(X) sm.is_bpf[X]
+
 #define OB_EEMF_AL ob.eemf_al
 #define OB_EEMF_BE ob.eemf_be
 #define OB_POS     ob.theta_d
@@ -28,6 +32,14 @@ struct SynchronousMachine{
     double is_curr[2];
     double us_prev[2];
     double is_prev[2];
+    double is_lpf[2];
+    double is_hpf[2];
+    double is_bpf[2];
+
+    double current_lpf_register[2];
+    double current_hpf_register[2];
+    double current_bpf_register1[2];
+    double current_bpf_register2[2];
 
     double npp;
     double npp_inv;
