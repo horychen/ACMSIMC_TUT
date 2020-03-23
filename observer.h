@@ -108,5 +108,30 @@ void sm_init();
 void ob_init();
 void observation();
 
+
+// ----------------------------- HFSI
+
+
+#define HFSI_ON
+#define SENSORLESS_CONTROL_HFSI false
+void hfsi_do();
+struct HFSI_Data{
+    double test_signal_al;
+    double test_signal_be;
+    double test_signal_M;
+    double test_signal_T;
+    double M_lpf;
+    double T_lpf;
+    double M_hpf;
+    double T_hpf;
+    double theta_filter;
+    double theta_d_raw;
+    double theta_d;
+    double omg_elec;
+    double pseudo_load_torque;
+    double mismatch;
+};
+extern struct HFSI_Data hfsi;
+
 #endif
 

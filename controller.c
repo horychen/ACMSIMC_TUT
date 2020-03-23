@@ -97,11 +97,16 @@ void CTRL_init(){
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed/position or measured speed/position
     #if SENSORLESS_CONTROL
-        // getch("Not Implemented");
-        // CTRL.omg__fb    ;
-        // CTRL.omega_syn ;
-        CTRL.omg__fb     = OB_OMG;
-        CTRL.theta_d__fb = OB_POS;
+        #if SENSORLESS_CONTROL_HFSI
+            CTRL.omg__fb     = hfsi.omg_elec;
+            CTRL.theta_d__fb = hfsi.theta_d;
+        #else
+            // getch("Not Implemented");
+            // CTRL.omg__fb    ;
+            // CTRL.omega_syn ;
+            CTRL.omg__fb     = OB_OMG;
+            CTRL.theta_d__fb = OB_POS;
+        #endif
     #else
         // from measurement() in main.c
         CTRL.omg__fb     = sm.omg_elec;
@@ -153,18 +158,20 @@ void control(double speed_cmd, double speed_cmd_dot){
     CTRL.ud_cmd = vd;
     CTRL.uq_cmd = vq;
 
-    // Extra excitation for observation
-    {
-        static int square_wave_internal_register = 1;
-        static int dfe_counter = 0; 
-        #define HFSI_VOLTAGE 5 // V
-        #define HFSI_CEILING 1
-        if(dfe_counter++==HFSI_CEILING){
-            dfe_counter = 0;
-            square_wave_internal_register *= -1;
+    #ifdef HFSI_ON
+        // Extra excitation for observation
+        {
+            static int square_wave_internal_register = 1;
+            static int dfe_counter = 0; 
+            #define HFSI_VOLTAGE 5 // V
+            #define HFSI_CEILING 1
+            if(dfe_counter++==HFSI_CEILING){
+                dfe_counter = 0;
+                square_wave_internal_register *= -1;
+            }
+            CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
         }
-        CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
-    }
+    #endif
 
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.ud_cmd, CTRL.uq_cmd, CTRL.cosT, CTRL.sinT);
