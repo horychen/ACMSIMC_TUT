@@ -27,6 +27,7 @@ struct ControllerForExperiment{
     // double Tload;
     // double rpm_cmd;
 
+    double npp;
     double Js;
     double Js_inv;
 
@@ -53,6 +54,9 @@ struct ControllerForExperiment{
     double uq_cmd;
     double id_cmd;
     double iq_cmd;
+
+    double Tem;
+    double Tem_cmd;
 
     // double theta_M;
     // double iMs;

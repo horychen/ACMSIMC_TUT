@@ -1,4 +1,5 @@
 #include "ACMSim.h"
+#define HFSI_ON
 
 double sign(double x){
     return (x > 0) - (x < 0);    
@@ -142,80 +143,219 @@ int machine_simulation(){
     }
 }
 
-double _LPF_Euler(double input, double *LPF_y__last, double time_const_inv, double h){ // See HighFreqInjection_dq_frame__SQUAREWAVE.afx
-    double y;
-    y = *LPF_y__last + h * time_const_inv * (input - *LPF_y__last);
-    *LPF_y__last = y;
-    return y;
-}
-double _HPF_Euler(double input, double *HPF_y__last, double time_const_inv, double h){
-    *HPF_y__last = _LPF_Euler(input, HPF_y__last, time_const_inv, h);
-    return input - *HPF_y__last;
-}
-double _BPF_Euler(double input, double *LPF_y__last, double time_const_inv_lpf, 
-                          double *HPF_y__last, double time_const_inv_hpf, double h){
-    double y;
-    y = _LPF_Euler(input, LPF_y__last, time_const_inv_lpf, h);
-    y = _HPF_Euler(    y, HPF_y__last, time_const_inv_hpf, h);
-    return y;
-}
+#ifdef HFSI_ON
+    #define LPF_TIME_CONST_INVERSE (5*2*M_PI) // time constant is 1/400 <=> cutoff frequency is 400/(2*pi) ||| 换句话说，截止频率 * 2pi = 时间常数的倒数 |||| f_cutoff = 1 / (time constant * 2*pi)
+    #define LUENBERGER_GAIN_1 20 //
+    #define LUENBERGER_GAIN_2 100 //
+    #define LUENBERGER_GAIN_3 0 //
 
-#define LPF_TIME_CONST_INVERSE (2*2*M_PI)
-void dynamics_lpf(double input, double *state, double *fx){
-    fx[0] = LPF_TIME_CONST_INVERSE * ( input - *state );
-}
-void RK4_general(void (*pointer_dynamics)(), double input, double *state, double hs){
-    // 我把euler 改成rk4以后就一切正常了
-    // 王彤:
-    // 其实rk4也不是正解，因为运算量太大，一般在dsp里不用的
-    // 按理应该用冲剂响应不变法离散
-    // 或者用prewarp tustin离散
-    // 冲击响应不变法类似与利用书里那个s域和z域的变换表变换，查查那个表就完了
-    // 但是我想你手头就有现成的rk4
-    // 所以应该更方便
-    // 不过冲剂响应不变法在通带的衰减不是0db
-    // 稍微差一点
-
-    #define NS 1
-
-    double k1[NS], k2[NS], k3[NS], k4[NS], intemediate_state[NS];
-    double derivative[NS];
-    int i;
-
-    pointer_dynamics(input, state, derivative); // timer.t,
-    for(i=0;i<NS;++i){        
-        k1[i] = derivative[i] * hs;
-        intemediate_state[i] = state[i] + k1[i]*0.5;
+    void dynamics_lpf(double input, double *state, double *derivative){
+        derivative[0] = LPF_TIME_CONST_INVERSE * ( input - *state );
     }
+    void RK4_111_general(void (*pointer_dynamics)(), double input, double *state, double hs){
+        // 我把euler 改成rk4以后就一切正常了
+        // 王彤:
+        // 其实rk4也不是正解，因为运算量太大，一般在dsp里不用的
+        // 按理应该用冲剂响应不变法离散
+        // 或者用prewarp tustin离散
+        // 冲击响应不变法类似与利用书里那个s域和z域的变换表变换，查查那个表就完了
+        // 但是我想你手头就有现成的rk4
+        // 所以应该更方便
+        // 不过冲剂响应不变法在通带的衰减不是0db
+        // 稍微差一点
 
-    pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs/2., 
-    for(i=0;i<NS;++i){        
-        k2[i] = derivative[i] * hs;
-        intemediate_state[i] = state[i] + k2[i]*0.5;
+        #define NS 1
+
+        double k1[NS], k2[NS], k3[NS], k4[NS], intemediate_state[NS];
+        double derivative[NS];
+        int i;
+
+        pointer_dynamics(input, state, derivative); // timer.t,
+        for(i=0;i<NS;++i){        
+            k1[i] = derivative[i] * hs;
+            intemediate_state[i] = state[i] + k1[i]*0.5;
+        }
+
+        pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs/2., 
+        for(i=0;i<NS;++i){        
+            k2[i] = derivative[i] * hs;
+            intemediate_state[i] = state[i] + k2[i]*0.5;
+        }
+        
+        pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs/2., 
+        for(i=0;i<NS;++i){        
+            k3[i] = derivative[i] * hs;
+            intemediate_state[i] = state[i] + k3[i];
+        }
+        
+        pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs, 
+        for(i=0;i<NS;++i){        
+            k4[i] = derivative[i] * hs;
+            state[i] = state[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0;
+        }
+        #undef NS
     }
-    
-    pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs/2., 
-    for(i=0;i<NS;++i){        
-        k3[i] = derivative[i] * hs;
-        intemediate_state[i] = state[i] + k3[i];
+    void RK4_333_general(void (*pointer_dynamics)(), double input, double *state, double hs){
+        #define NS 3
+
+        double k1[NS], k2[NS], k3[NS], k4[NS], intemediate_state[NS];
+        double derivative[NS];
+        int i;
+
+        pointer_dynamics(input, state, derivative); // timer.t,
+        for(i=0;i<NS;++i){        
+            k1[i] = derivative[i] * hs;
+            intemediate_state[i] = state[i] + k1[i]*0.5;
+        }
+
+        pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs/2., 
+        for(i=0;i<NS;++i){        
+            k2[i] = derivative[i] * hs;
+            intemediate_state[i] = state[i] + k2[i]*0.5;
+        }
+        
+        pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs/2., 
+        for(i=0;i<NS;++i){        
+            k3[i] = derivative[i] * hs;
+            intemediate_state[i] = state[i] + k3[i];
+        }
+        
+        pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs, 
+        for(i=0;i<NS;++i){        
+            k4[i] = derivative[i] * hs;
+            state[i] = state[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0;
+        }
+        #undef NS
     }
-    
-    pointer_dynamics(input, intemediate_state, derivative); // timer.t+hs, 
-    for(i=0;i<NS;++i){        
-        k4[i] = derivative[i] * hs;
-        state[i] = state[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0;
+    struct HFSI_Data{
+        double test_signal_al;
+        double test_signal_be;
+        double test_signal_M;
+        double test_signal_T;
+        double M_lpf;
+        double T_lpf;
+        double M_hpf;
+        double T_hpf;
+        double theta_filter;
+        double theta_d_raw;
+        double theta_d;
+        double omg_elec;
+        double pseudo_load_torque;
+        double mismatch;
+    };
+    struct HFSI_Data hfsi;
+    void hfsi_init(){
+        hfsi.test_signal_al = 0.0;
+        hfsi.test_signal_be = 0.0;
+        hfsi.test_signal_M = 0.0;
+        hfsi.test_signal_T = 0.0;
+        hfsi.M_lpf = 0.0;
+        hfsi.T_lpf = 0.0;
+        hfsi.M_hpf = 0.0;
+        hfsi.T_hpf = 0.0;
+        hfsi.theta_filter = 0.0;
+        hfsi.theta_d_raw = 0.0;
+        hfsi.theta_d = 0.0;
+        hfsi.omg_elec = 0.0;
+        hfsi.pseudo_load_torque = 0.0;
+        hfsi.mismatch = 0.0;
     }
-    #undef NS
-}
-double test_signal_al = 0;
-double test_signal_be = 0;
-double test_signal_M = 0;
-double test_signal_T = 0;
-double M_lpf = 0;
-double T_lpf = 0;
-double M_hpf = 0;
-double T_hpf = 0;
-double theta_filter = 0;
+    double difference_between_two_angles(double first, double second){
+        while(first>2*M_PI){
+            first-=2*M_PI;
+        }
+        while(second>2*M_PI){
+            second-=2*M_PI;
+        }
+
+        while(first<0.0){
+            first+=2*M_PI;
+        }
+        while(second<0.0){
+            second+=2*M_PI;
+        }
+
+        if(fabs(first-second)<M_PI){
+            return first-second;
+        }else{
+            if(first>second){
+                return first-2*M_PI-second;
+            }else{                
+                return first+2*M_PI-second;
+            }
+        }
+    }
+    void dynamics_position_observer(double input, double *state, double *derivative){
+        #define TEM_USED CTRL.Tem
+        // #define TEM_USED ACM.Tem
+        hfsi.mismatch = difference_between_two_angles(input, state[0]); // difference in angle
+        derivative[0] = LUENBERGER_GAIN_1*hfsi.mismatch + state[1];
+        derivative[1] = LUENBERGER_GAIN_2*hfsi.mismatch + TEM_USED*CTRL.npp/CTRL.Js - state[2];
+        derivative[2] = LUENBERGER_GAIN_3*hfsi.mismatch;
+        // printf("%g, %g, %g\n", CTRL.timebase, state[2], derivative[2]);
+    }
+    void luenberger_filter(double theta_d_raw){
+        static double state[3];
+
+        RK4_333_general(dynamics_position_observer, theta_d_raw, state, TS);
+
+        if(state[0]>M_PI){
+            state[0] -= 2*M_PI;
+        }else if(state[0]<-M_PI){
+            state[0] += 2*M_PI;
+        }
+        hfsi.theta_d            = state[0] - 0.5*M_PI;
+        hfsi.omg_elec           = state[1];
+        hfsi.pseudo_load_torque = state[2];
+    }
+    void hfsi_do(){
+        // luenberger_filter() needs CTRL.Tem so hfsi_do() should executed after contorl().
+        // If filtered currents are used instead of IS_C, move everything before luenberger_filter() to measurement(). <- Not suggested: lpf ruins current loop control.
+
+        hfsi.test_signal_al = ACM.ial;
+        hfsi.test_signal_be = ACM.ibe;
+        {
+            // hfsi.theta_filter = sm.theta_d;
+            hfsi.theta_filter = hfsi.theta_d;
+
+            hfsi.test_signal_M = AB2M(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            hfsi.test_signal_T = AB2T(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+
+            // LPF
+            RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, TS);
+            RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, TS);
+            IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+
+            // HPF
+            double LAST_IS_HPF[2];
+            double DELTA_IS_HPF[2];
+            LAST_IS_HPF[0] = IS_HPF(0);
+            LAST_IS_HPF[1] = IS_HPF(1);
+            hfsi.M_hpf = hfsi.test_signal_M - hfsi.M_lpf;
+            hfsi.T_hpf = hfsi.test_signal_T - hfsi.T_lpf;
+            IS_HPF(0) = MT2A(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            IS_HPF(1) = MT2B(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+
+            DELTA_IS_HPF[0] = IS_HPF(0) - LAST_IS_HPF[0];
+            DELTA_IS_HPF[1] = IS_HPF(1) - LAST_IS_HPF[1];
+            hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]);
+            if(hfsi.theta_d_raw>M_PI){
+                printf("%g", hfsi.theta_d_raw/M_PI*180);
+                hfsi.theta_d_raw -= 2*M_PI;
+            }else if(hfsi.theta_d_raw<-M_PI){
+                printf("%g", hfsi.theta_d_raw/M_PI*180);
+                hfsi.theta_d_raw += 2*M_PI;
+            }
+        }
+        // IS_C(0) = IS_LPF(0); // The waveform of filtered currents looks good but it is still delayed and that is detrimental to control system stability.
+        // IS_C(1) = IS_LPF(1); 
+
+        luenberger_filter(hfsi.theta_d_raw);
+    }
+#endif
+
+
 void measurement(){
     // Executed every TS
 
@@ -227,51 +367,8 @@ void measurement(){
 
 
     // Current measurement
-    // theta_filter = 5*2*M_PI*CTRL.timebase;
-    theta_filter = sm.theta_d;
-
-    // test_signal_al = 100*cos(theta_filter) + 0.0*cos(500*2*M_PI*CTRL.timebase);
-    // test_signal_be = 100*sin(theta_filter);
-    // static int square_wave_internal_register = 1;
-    // static int dfe_counter = 0; 
-    // #define HFSI_VOLTAGE 5 // V
-    // if(dfe_counter++==2){
-    //     dfe_counter = 0;
-    //     square_wave_internal_register *= -1;
-    // }
-    // test_signal_al += HFSI_VOLTAGE*square_wave_internal_register;
-
-    test_signal_al = ACM.ial;
-    test_signal_be = ACM.ibe;
-
-    {
-        test_signal_M = AB2M(test_signal_al, test_signal_be, cos(theta_filter), sin(theta_filter));
-        test_signal_T = AB2T(test_signal_al, test_signal_be, cos(theta_filter), sin(theta_filter));
-
-        // LPF
-        RK4_general(dynamics_lpf, test_signal_M, &M_lpf, TS);
-        RK4_general(dynamics_lpf, test_signal_T, &T_lpf, TS);
-        // M_lpf = _LPF_Euler(test_signal_M, (sm.current_lpf_register+0), 10*2*M_PI, TS);
-        // T_lpf = _LPF_Euler(test_signal_T, (sm.current_lpf_register+1), 10*2*M_PI, TS);
-        IS_LPF(0) = MT2A(M_lpf, T_lpf, cos(theta_filter), sin(theta_filter));
-        IS_LPF(1) = MT2B(M_lpf, T_lpf, cos(theta_filter), sin(theta_filter));
-
-        // HPF
-        M_hpf = test_signal_M - M_lpf;
-        T_hpf = test_signal_T - T_lpf;
-        // M_hpf = _HPF_Euler(test_signal_M, (sm.current_hpf_register+0), 400*2*M_PI, TS);
-        // T_hpf = _HPF_Euler(test_signal_T, (sm.current_hpf_register+1), 400*2*M_PI, TS);
-        IS_HPF(0) = MT2A(M_hpf, T_hpf, cos(theta_filter), sin(theta_filter));
-        IS_HPF(1) = MT2B(M_hpf, T_hpf, cos(theta_filter), sin(theta_filter));
-
-        // BPF
-        // IS_BPF(0) = _BPF_Euler(test_signal_al, (sm.current_bpf_register1+0), 500*2*M_PI,
-        //                                  (sm.current_bpf_register2+0), 50*2*M_PI, TS); // time constant is 1/400 <=> cutoff frequency is 400/(2*pi)
-    }
-    IS_C(0) = IS_LPF(0);
-    IS_C(1) = IS_LPF(1);
-    // IS_C(0) = ACM.ial;
-    // IS_C(1) = ACM.ibe;
+    IS_C(0) = ACM.ial;
+    IS_C(1) = ACM.ibe;
 
     // Position and speed measurement
     sm.omg_elec = ACM.x[2];
@@ -327,12 +424,19 @@ int main(){
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
-        ACM.rpm_cmd = 10;
+        ACM.rpm_cmd = -10;
+        if(CTRL.timebase>12){
+            ACM.rpm_cmd = 50;
+        }else if(CTRL.timebase>8){
+            ACM.rpm_cmd = -20;
+        }else if(CTRL.timebase>4){
+            ACM.rpm_cmd = -40;
+        }
 
         /* Load Torque */
-        // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
+        ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
-        ACM.Tload = 2 * sign(ACM.rpm);
+        // ACM.Tload = 2 * sign(ACM.rpm); // speed-direction-dependent load
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -353,6 +457,8 @@ int main(){
             write_data_to_file(fw);
 
             control(ACM.rpm_cmd, 0);
+
+            hfsi_do();
         }
 
         inverter_model();
@@ -371,7 +477,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg,test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1),M_hpf,T_hpf\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg,test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1),M_hpf,T_hpf,HFSI_POS,HFSI_POS_ER,hfsi.theta_d,ER(theta_d),hfsi.omg_elec,ER(omg_elec),hfsi.TL,mismatch\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -389,13 +495,14 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
                     ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
                     OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, OB_OMG, ACM.omg_elec-OB_OMG,
-                    test_signal_al, test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1),
-                    M_hpf, T_hpf
+                    hfsi.test_signal_al, hfsi.test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1),
+                    hfsi.M_hpf, hfsi.T_hpf, hfsi.theta_d_raw, sin(ACM.theta_d-hfsi.theta_d_raw),
+                    hfsi.theta_d, sin(ACM.theta_d-hfsi.theta_d), hfsi.omg_elec, sm.omg_elec-hfsi.omg_elec, hfsi.pseudo_load_torque, hfsi.mismatch
                     );
         }
     }

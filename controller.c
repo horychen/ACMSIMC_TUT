@@ -42,6 +42,7 @@ void CTRL_init(){
     // CTRL.Tload = 0.0;
     // CTRL.rpm_cmd = 0.0;
 
+    CTRL.npp = ACM.npp;
     CTRL.Js = ACM.Js;
     CTRL.Js_inv = 1.0 / CTRL.Js;
 
@@ -68,6 +69,9 @@ void CTRL_init(){
     CTRL.uq_cmd = 0.0;
     CTRL.id_cmd = 0.0;
     CTRL.iq_cmd = 0.0;
+
+    CTRL.Tem = 0.0;
+    CTRL.Tem_cmd = 0.0;
 
     // ver. IEMDC
     CTRL.PID_speed.Kp = SPEED_LOOP_PID_PROPORTIONAL_GAIN;
@@ -136,6 +140,10 @@ void control(double speed_cmd, double speed_cmd_dot){
     CTRL.id__fb = AB2M(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
     CTRL.iq__fb = AB2T(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
 
+    // For luenberger position observer for HFSI
+    CTRL.Tem     = CTRL.npp * (CTRL.KE*CTRL.iq__fb + (CTRL.Ld-CTRL.Lq)*CTRL.id__fb*CTRL.iq__fb);
+    CTRL.Tem_cmd = CTRL.npp * (CTRL.KE*CTRL.iq_cmd + (CTRL.Ld-CTRL.Lq)*CTRL.id_cmd*CTRL.iq_cmd);
+
     // Voltage command in d-q frame
     double vd, vq;
     vd = - PID(&CTRL.PID_id, CTRL.id__fb-CTRL.id_cmd);
@@ -146,14 +154,17 @@ void control(double speed_cmd, double speed_cmd_dot){
     CTRL.uq_cmd = vq;
 
     // Extra excitation for observation
-    static int square_wave_internal_register = 1;
-    static int dfe_counter = 0; 
-    #define HFSI_VOLTAGE 5 // V
-    if(dfe_counter++==3){
-        dfe_counter = 0;
-        square_wave_internal_register *= -1;
+    {
+        static int square_wave_internal_register = 1;
+        static int dfe_counter = 0; 
+        #define HFSI_VOLTAGE 5 // V
+        #define HFSI_CEILING 1
+        if(dfe_counter++==HFSI_CEILING){
+            dfe_counter = 0;
+            square_wave_internal_register *= -1;
+        }
+        CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
     }
-    CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
 
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.ud_cmd, CTRL.uq_cmd, CTRL.cosT, CTRL.sinT);
