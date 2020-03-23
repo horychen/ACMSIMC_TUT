@@ -165,6 +165,17 @@ void dynamics_lpf(double input, double *state, double *fx){
     fx[0] = LPF_TIME_CONST_INVERSE * ( input - *state );
 }
 void RK4_general(void (*pointer_dynamics)(), double input, double *state, double hs){
+    // 我把euler 改成rk4以后就一切正常了
+    // 王彤:
+    // 其实rk4也不是正解，因为运算量太大，一般在dsp里不用的
+    // 按理应该用冲剂响应不变法离散
+    // 或者用prewarp tustin离散
+    // 冲击响应不变法类似与利用书里那个s域和z域的变换表变换，查查那个表就完了
+    // 但是我想你手头就有现成的rk4
+    // 所以应该更方便
+    // 不过冲剂响应不变法在通带的衰减不是0db
+    // 稍微差一点
+
     #define NS 1
 
     double k1[NS], k2[NS], k3[NS], k4[NS], intemediate_state[NS];
@@ -214,47 +225,53 @@ void measurement(){
     US_P(0) = US_C(0);
     US_P(1) = US_C(1);
 
+
     // Current measurement
-    theta_filter = 1*2*M_PI*CTRL.timebase;
+    // theta_filter = 5*2*M_PI*CTRL.timebase;
+    theta_filter = sm.theta_d;
 
-    test_signal_al = 1*cos(theta_filter) + 0.0*cos(500*2*M_PI*CTRL.timebase);
-    test_signal_be = 1*sin(theta_filter);
+    // test_signal_al = 100*cos(theta_filter) + 0.0*cos(500*2*M_PI*CTRL.timebase);
+    // test_signal_be = 100*sin(theta_filter);
+    // static int square_wave_internal_register = 1;
+    // static int dfe_counter = 0; 
+    // #define HFSI_VOLTAGE 5 // V
+    // if(dfe_counter++==2){
+    //     dfe_counter = 0;
+    //     square_wave_internal_register *= -1;
+    // }
+    // test_signal_al += HFSI_VOLTAGE*square_wave_internal_register;
 
-    // Extra excitation for observation
-    static int square_wave_internal_register = 1;
-    static int dfe_counter = 0; 
-    #define HFSI_VOLTAGE 5 // V
-    if(dfe_counter++==2){
-        dfe_counter = 0;
-        square_wave_internal_register *= -1;
+    test_signal_al = ACM.ial;
+    test_signal_be = ACM.ibe;
+
+    {
+        test_signal_M = AB2M(test_signal_al, test_signal_be, cos(theta_filter), sin(theta_filter));
+        test_signal_T = AB2T(test_signal_al, test_signal_be, cos(theta_filter), sin(theta_filter));
+
+        // LPF
+        RK4_general(dynamics_lpf, test_signal_M, &M_lpf, TS);
+        RK4_general(dynamics_lpf, test_signal_T, &T_lpf, TS);
+        // M_lpf = _LPF_Euler(test_signal_M, (sm.current_lpf_register+0), 10*2*M_PI, TS);
+        // T_lpf = _LPF_Euler(test_signal_T, (sm.current_lpf_register+1), 10*2*M_PI, TS);
+        IS_LPF(0) = MT2A(M_lpf, T_lpf, cos(theta_filter), sin(theta_filter));
+        IS_LPF(1) = MT2B(M_lpf, T_lpf, cos(theta_filter), sin(theta_filter));
+
+        // HPF
+        M_hpf = test_signal_M - M_lpf;
+        T_hpf = test_signal_T - T_lpf;
+        // M_hpf = _HPF_Euler(test_signal_M, (sm.current_hpf_register+0), 400*2*M_PI, TS);
+        // T_hpf = _HPF_Euler(test_signal_T, (sm.current_hpf_register+1), 400*2*M_PI, TS);
+        IS_HPF(0) = MT2A(M_hpf, T_hpf, cos(theta_filter), sin(theta_filter));
+        IS_HPF(1) = MT2B(M_hpf, T_hpf, cos(theta_filter), sin(theta_filter));
+
+        // BPF
+        // IS_BPF(0) = _BPF_Euler(test_signal_al, (sm.current_bpf_register1+0), 500*2*M_PI,
+        //                                  (sm.current_bpf_register2+0), 50*2*M_PI, TS); // time constant is 1/400 <=> cutoff frequency is 400/(2*pi)
     }
-    test_signal_al += HFSI_VOLTAGE*square_wave_internal_register;
-
-    test_signal_M = AB2M(test_signal_al, test_signal_be, cos(theta_filter), sin(theta_filter));
-    test_signal_T = AB2T(test_signal_al, test_signal_be, cos(theta_filter), sin(theta_filter));
-
-    RK4_general(dynamics_lpf, test_signal_M, &M_lpf, TS);
-    RK4_general(dynamics_lpf, test_signal_T, &T_lpf, TS);
-    // M_lpf = _LPF_Euler(test_signal_M, (sm.current_lpf_register+0), 10*2*M_PI, TS);
-    // T_lpf = _LPF_Euler(test_signal_T, (sm.current_lpf_register+1), 10*2*M_PI, TS);
-    IS_LPF(0) = MT2A(M_lpf, T_lpf, cos(theta_filter), sin(theta_filter));
-    IS_LPF(1) = MT2B(M_lpf, T_lpf, cos(theta_filter), sin(theta_filter));
-
-    M_hpf = test_signal_M - M_lpf;
-    T_hpf = test_signal_T - T_lpf;
-    // M_hpf = _HPF_Euler(test_signal_M, (sm.current_hpf_register+0), 400*2*M_PI, TS);
-    // T_hpf = _HPF_Euler(test_signal_T, (sm.current_hpf_register+1), 400*2*M_PI, TS);
-    IS_HPF(0) = MT2A(M_hpf, T_hpf, cos(theta_filter), sin(theta_filter));
-    IS_HPF(1) = MT2B(M_hpf, T_hpf, cos(theta_filter), sin(theta_filter));
-
-    IS_BPF(0) = _BPF_Euler(test_signal_al, (sm.current_bpf_register1+0), 500*2*M_PI,
-                                     (sm.current_bpf_register2+0), 50*2*M_PI, TS); // time constant is 1/400 <=> cutoff frequency is 400/(2*pi)
-
-
-    IS_C(0) = ACM.ial;
-    IS_C(1) = ACM.ibe;
-    // IS_C(0) = IS_LPF_Euler(0);
-    // IS_C(1) = IS_LPF_Euler(1);
+    IS_C(0) = IS_LPF(0);
+    IS_C(1) = IS_LPF(1);
+    // IS_C(0) = ACM.ial;
+    // IS_C(1) = ACM.ibe;
 
     // Position and speed measurement
     sm.omg_elec = ACM.x[2];
@@ -309,11 +326,8 @@ int main(){
 
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
-        // ACM.rpm_cmd = 500;
-        // if(CTRL.timebase>10){
-        //     ACM.rpm_cmd = 2000;
-        // }
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
+        ACM.rpm_cmd = 10;
 
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
@@ -334,7 +348,7 @@ int main(){
 
             measurement();
 
-            observation();
+            // observation();
 
             write_data_to_file(fw);
 
@@ -357,7 +371,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg,test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1)\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg,test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1),M_hpf,T_hpf\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -375,12 +389,13 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
                     ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
                     OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, OB_OMG, ACM.omg_elec-OB_OMG,
-                    test_signal_al, test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1)
+                    test_signal_al, test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1),
+                    M_hpf, T_hpf
                     );
         }
     }

@@ -149,11 +149,11 @@ void control(double speed_cmd, double speed_cmd_dot){
     static int square_wave_internal_register = 1;
     static int dfe_counter = 0; 
     #define HFSI_VOLTAGE 5 // V
-    if(dfe_counter++==1){
+    if(dfe_counter++==3){
         dfe_counter = 0;
         square_wave_internal_register *= -1;
-        CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
     }
+    CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
 
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.ud_cmd, CTRL.uq_cmd, CTRL.cosT, CTRL.sinT);
