@@ -183,7 +183,13 @@ void inverter_model(){
 }
 
 int main(){
-    
+    if(SENSORLESS_CONTROL_HFSI==true){
+        printf("Sensorless using HFSI.\n");
+    }else{
+        if(SENSORLESS_CONTROL==true){
+            printf("Sensorless using observer.\n");
+        }
+    }
     printf("NUMBER_OF_STEPS: %d\n\n", NUMBER_OF_STEPS);
 
     /* Initialization */
@@ -211,7 +217,7 @@ int main(){
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
         ACM.rpm_cmd = -10;
         if(CTRL.timebase>12){
-            ACM.rpm_cmd = 50;
+            ACM.rpm_cmd = 0;
         }else if(CTRL.timebase>8){
             ACM.rpm_cmd = -40;
         }else if(CTRL.timebase>4){

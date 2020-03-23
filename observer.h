@@ -113,7 +113,7 @@ void observation();
 
 
 #define HFSI_ON
-#define SENSORLESS_CONTROL_HFSI false
+#define SENSORLESS_CONTROL_HFSI true
 void hfsi_do();
 struct HFSI_Data{
     double test_signal_al;
