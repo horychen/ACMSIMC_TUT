@@ -161,18 +161,7 @@ void measurement(){
     // IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
     // IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
-    {
-
-        hfsi.test_signal_al = ACM.ial;
-        hfsi.test_signal_be = ACM.ibe;
-
-        // hfsi.theta_filter = sm.theta_d;
-        hfsi.theta_filter = hfsi.theta_d;
-
-        hfsi.test_signal_M = AB2M(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-        hfsi.test_signal_T = AB2T(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-
-    }
+    hfsi_do_in_measurement();
     static double local_M_lpf = 0.0;
     static double local_T_lpf = 0.0;
     static double local_ial_lpf = 0.0;
@@ -286,7 +275,7 @@ int main(){
 
             control(ACM.rpm_cmd, 0);
 
-            hfsi_do();
+            hfsi_do_after_control();
         }
 
         inverter_model();

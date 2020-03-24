@@ -121,9 +121,10 @@ void observation();
 #define LPF_TIME_CONST_INVERSE (5*2*M_PI) // time constant is 1/400 <=> cutoff frequency is 400/(2*pi) ||| 换句话说，截止频率 * 2pi = 时间常数的倒数 |||| f_cutoff = 1 / (time constant * 2*pi)
 #define LUENBERGER_GAIN_1 (45)   // 45       //45     // 30     // 30       // 30     // 30    // 20  // Large gain to position will cause steady state position error, but increase it close to limit
 #define LUENBERGER_GAIN_2 (750)  // (500)    //(500)  // (900)  // (750)    // (300)  // (300) // 100 // If speed estimate has too much dynamics during reversal, you need to increase this gain actually...
-#define LUENBERGER_GAIN_3 (6000) // (0*1800) //(2000) // (1500) // (0*6000) // (1500) // (790) // 500 // Tune reversal response to slight over-shoot
+#define LUENBERGER_GAIN_3 (9000) // (0*1800) //(2000) // (1500) // (0*6000) // (1500) // (790) // 500 // Tune reversal response to slight over-shoot
 
-void hfsi_do();
+void hfsi_do_in_measurement();
+void hfsi_do_after_control();
 void hfsi_init();
 struct HFSI_Data{
     double test_signal_al;

@@ -493,62 +493,69 @@ void observation(){
         hfsi.omg_elec           = state[1];
         hfsi.pseudo_load_torque = state[2];
     }
-    void hfsi_do(){
+    void hfsi_do_in_measurement(){
+        hfsi.test_signal_al = ACM.ial;
+        hfsi.test_signal_be = ACM.ibe;
+
+        // hfsi.theta_filter = sm.theta_d;
+        hfsi.theta_filter = hfsi.theta_d;
+
+        hfsi.test_signal_M = AB2M(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+        hfsi.test_signal_T = AB2T(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+    }
+    void hfsi_do_after_control(){
         // luenberger_filter() needs CTRL.Tem so hfsi_do() should executed after contorl().
         // If filtered currents are used instead of IS_C, move everything before luenberger_filter() to measurement(). <- Not suggested: lpf ruins current loop control.
 
-        // int i;
-        // for(i=0;i<10;++i)
-        {
-            static int dfe_counter = 0; 
-            if(dfe_counter++==HFSI_CEILING){
-                dfe_counter = 0;
+        static int dfe_counter = 0; 
+        if(dfe_counter++==HFSI_CEILING){
+            dfe_counter = 0;
 
-                // LPF
-                RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, hfsi.h);
-                RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, hfsi.h);
-                IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-                IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            // LPF
+            RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, hfsi.h);
+            RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, hfsi.h);
+            IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
-                // HPF
-                double LAST_IS_HPF[2];
-                double DELTA_IS_HPF[2];
-                LAST_IS_HPF[0] = IS_HPF(0);
-                LAST_IS_HPF[1] = IS_HPF(1);
-                double LAST_M_HPF = hfsi.M_hpf;
-                double LAST_T_HPF = hfsi.T_hpf;
-                hfsi.M_hpf = hfsi.test_signal_M - hfsi.M_lpf;
-                hfsi.T_hpf = hfsi.test_signal_T - hfsi.T_lpf;
-                IS_HPF(0) = MT2A(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-                IS_HPF(1) = MT2B(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            // HPF
+            double LAST_IS_HPF[2];
+            double DELTA_IS_HPF[2];
+            LAST_IS_HPF[0] = IS_HPF(0);
+            LAST_IS_HPF[1] = IS_HPF(1);
+            double LAST_M_HPF = hfsi.M_hpf;
+            double LAST_T_HPF = hfsi.T_hpf;
+            hfsi.M_hpf = hfsi.test_signal_M - hfsi.M_lpf;
+            hfsi.T_hpf = hfsi.test_signal_T - hfsi.T_lpf;
+            IS_HPF(0) = MT2A(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+            IS_HPF(1) = MT2B(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
-                // My method
-                double DELTA_M_HPF;
-                double DELTA_T_HPF;
-                DELTA_M_HPF = hfsi.M_hpf - LAST_M_HPF;
-                DELTA_T_HPF = hfsi.T_hpf - LAST_T_HPF;
-                // hfsi.LAST_uM = HFSI_VOLTAGE*hfsi.square_wave_internal_regisqter;
-                hfsi.LAST_uM = -HFSI_VOLTAGE*hfsi.square_wave_internal_register;
-                hfsi.tilde_theta_d = 0.5 * atan2(-DELTA_T_HPF, -DELTA_M_HPF + hfsi.h * hfsi.LAST_uM * (CTRL.Ld+CTRL.Lq)/(2*CTRL.Ld*CTRL.Lq));
+            // My method
+            double DELTA_M_HPF;
+            double DELTA_T_HPF;
+            DELTA_M_HPF = hfsi.M_hpf - LAST_M_HPF;
+            DELTA_T_HPF = hfsi.T_hpf - LAST_T_HPF;
+            // hfsi.LAST_uM = HFSI_VOLTAGE*hfsi.square_wave_internal_regisqter;
+            hfsi.LAST_uM = -HFSI_VOLTAGE*hfsi.square_wave_internal_register;
+            hfsi.tilde_theta_d = 0.5 * atan2(-DELTA_T_HPF, -DELTA_M_HPF + hfsi.h * hfsi.LAST_uM * (CTRL.Ld+CTRL.Lq)/(2*CTRL.Ld*CTRL.Lq));
 
-                // Yoon's method
-                DELTA_IS_HPF[0] = IS_HPF(0) - LAST_IS_HPF[0];
-                DELTA_IS_HPF[1] = IS_HPF(1) - LAST_IS_HPF[1];
-                hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]) + 0.5*M_PI; // 90 DEGREE BIAS MOVED HERE
-                // hfsi.theta_d_raw = atan2(DELTA_IS_HPF[0], DELTA_IS_HPF[1]); # wrong: you will see a sinusoidal waveform in position error.
-                if(hfsi.theta_d_raw>M_PI){
-                    // printf("%g", hfsi.theta_d_raw/M_PI*180);
-                    hfsi.theta_d_raw -= 2*M_PI;
-                }else if(hfsi.theta_d_raw<-M_PI){
-                    // printf("%g", hfsi.theta_d_raw/M_PI*180);
-                    hfsi.theta_d_raw += 2*M_PI;
-                }
+            // Yoon's method
+            DELTA_IS_HPF[0] = IS_HPF(0) - LAST_IS_HPF[0];
+            DELTA_IS_HPF[1] = IS_HPF(1) - LAST_IS_HPF[1];
+            hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]) + 0.5*M_PI; // 90 DEGREE BIAS MOVED HERE
+            // hfsi.theta_d_raw = atan2(DELTA_IS_HPF[0], DELTA_IS_HPF[1]); # wrong: you will see a sinusoidal waveform in position error.
+            if(hfsi.theta_d_raw>M_PI){
+                // printf("%g", hfsi.theta_d_raw/M_PI*180);
+                hfsi.theta_d_raw -= 2*M_PI;
+            }else if(hfsi.theta_d_raw<-M_PI){
+                // printf("%g", hfsi.theta_d_raw/M_PI*180);
+                hfsi.theta_d_raw += 2*M_PI;
             }
-            luenberger_filter(hfsi.theta_d_raw);
         }
-        // IS_C(0) = IS_LPF(0); // The waveform of filtered currents looks good but it is still delayed and that is detrimental to control system stability.
-        // IS_C(1) = IS_LPF(1); 
 
+        // int i;
+        // for(i=0;i<10;++i){
+            luenberger_filter(hfsi.theta_d_raw);
+        // }
     }
 #endif
 
