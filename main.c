@@ -152,6 +152,25 @@ void measurement(){
 
 
     // Current measurement
+    // RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, TS);
+    // RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, TS);
+    // IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+    // IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+
+    {
+        // hfsi.theta_filter = sm.theta_d;
+        hfsi.theta_filter = hfsi.theta_d;
+
+        hfsi.test_signal_M = AB2M(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+        hfsi.test_signal_T = AB2T(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+
+        // LPF
+        RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, TS);
+        RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, TS);
+        IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+        IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+    }
+
     IS_C(0) = ACM.ial;
     IS_C(1) = ACM.ibe;
 
@@ -197,6 +216,7 @@ int main(){
     CTRL_init();
     sm_init();
     ob_init();
+    hfsi_init();
 
     FILE *fw;
     fw = fopen(DATA_FILE_NAME, "w");
@@ -216,15 +236,15 @@ int main(){
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
         if(CTRL.timebase>12){
-            ACM.rpm_cmd = 0*-40;
+            ACM.rpm_cmd = 40;
         }else if(CTRL.timebase>9){
             ACM.rpm_cmd = 0;
         }else if(CTRL.timebase>6){
-            ACM.rpm_cmd = 40;
+            ACM.rpm_cmd = -40;
         }else if(CTRL.timebase>3){
-            ACM.rpm_cmd = 20;
+            ACM.rpm_cmd = -20;
         }else{
-            ACM.rpm_cmd = 10;
+            ACM.rpm_cmd = -10;
         }
 
         /* Load Torque */
@@ -293,11 +313,11 @@ void write_data_to_file(FILE *fw){
             fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
-                    ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
-                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, OB_OMG, ACM.omg_elec-OB_OMG,
+                    ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,difference_between_two_angles(ACM.theta_d, ACM.theta_d__eemf)/M_PI*180,
+                    OB_POS, difference_between_two_angles(ACM.theta_d, OB_POS)/M_PI*180, OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, OB_OMG, ACM.omg_elec-OB_OMG,
                     hfsi.test_signal_al, hfsi.test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1),
-                    hfsi.M_hpf, hfsi.T_hpf, hfsi.theta_d_raw, sin(ACM.theta_d-hfsi.theta_d_raw),
-                    hfsi.theta_d, sin(ACM.theta_d-hfsi.theta_d), hfsi.omg_elec, sm.omg_elec-hfsi.omg_elec, hfsi.pseudo_load_torque*CTRL.Js/CTRL.npp, hfsi.mismatch
+                    hfsi.M_hpf, hfsi.T_hpf, hfsi.theta_d_raw, difference_between_two_angles(ACM.theta_d, hfsi.theta_d_raw)/M_PI*180,
+                    hfsi.theta_d, difference_between_two_angles(ACM.theta_d, hfsi.theta_d)/M_PI*180, hfsi.omg_elec, sm.omg_elec-hfsi.omg_elec, hfsi.pseudo_load_torque*CTRL.Js/CTRL.npp, hfsi.mismatch
                     );
         }
     }

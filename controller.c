@@ -161,15 +161,15 @@ void control(double speed_cmd, double speed_cmd_dot){
     #ifdef HFSI_ON
         // Extra excitation for observation
         {
-            static int square_wave_internal_register = 1;
+            hfsi.LAST_uM = HFSI_VOLTAGE*hfsi.square_wave_internal_register;
+
             static int dfe_counter = 0; 
-            #define HFSI_VOLTAGE 5 // V
-            #define HFSI_CEILING 1
             if(dfe_counter++==HFSI_CEILING){
                 dfe_counter = 0;
-                square_wave_internal_register *= -1;
+                hfsi.square_wave_internal_register *= -1;
             }
-            CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
+            // hfsi.square_wave_internal_register *= -1;
+            CTRL.ud_cmd += HFSI_VOLTAGE*hfsi.square_wave_internal_register;
         }
     #endif
 

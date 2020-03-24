@@ -308,11 +308,6 @@ void observation(){
 
 
 #ifdef HFSI_ON
-    #define LPF_TIME_CONST_INVERSE (5*2*M_PI) // time constant is 1/400 <=> cutoff frequency is 400/(2*pi) ||| 换句话说，截止频率 * 2pi = 时间常数的倒数 |||| f_cutoff = 1 / (time constant * 2*pi)
-    #define LUENBERGER_GAIN_1 45     //45     // 30       // 30       // 30     // 30    // 20  // Large gain to position will cause steady state position error, but increase it close to limit
-    #define LUENBERGER_GAIN_2 (500)  //(500)  // (900)    // (750)    // (300)  // (300) // 100 // If speed estimate has too much dynamics during reversal, you need to increase this gain actually...
-    #define LUENBERGER_GAIN_3 (1800) //(2000) // (1500) // (0*6000) // (1500) // (790) // 500 // Tune reversal response to slight over-shoot
-
     void dynamics_lpf(double input, double *state, double *derivative){
         derivative[0] = LPF_TIME_CONST_INVERSE * ( input - *state );
     }
@@ -407,6 +402,18 @@ void observation(){
         hfsi.omg_elec = 0.0;
         hfsi.pseudo_load_torque = 0.0;
         hfsi.mismatch = 0.0;
+
+        hfsi.tilde_theta_d = 0.0;
+        hfsi.square_wave_internal_register = -1;
+        hfsi.LAST_uM = 0.0;
+
+        if(HFSI_CEILING == 1){
+            hfsi.h = 2*TS;
+        }else if(HFSI_CEILING == 0){
+            hfsi.h = TS;
+        }else{
+            printf("NOT IMPLEMENTED\n");
+        }
     }
     double difference_between_two_angles(double first, double second){
         while(first>2*M_PI){
@@ -434,29 +441,40 @@ void observation(){
         }
     }
     void dynamics_position_observer(double input, double *state, double *derivative){
+
+        #define OMG_USED state[1]
         #define TEM_USED CTRL.Tem
+
+        // #define OMG_USED ACM.omg_elec
         // #define TEM_USED ACM.Tem
+
+        // Yoon's method
         hfsi.mismatch = difference_between_two_angles(input, state[0]); // difference in angle
-        derivative[0] = LUENBERGER_GAIN_1*hfsi.mismatch + state[1];
+
+        // My method
+        // hfsi.mismatch = hfsi.tilde_theta_d;
+
+        derivative[0] = LUENBERGER_GAIN_1*hfsi.mismatch + OMG_USED;
         derivative[1] = LUENBERGER_GAIN_2*hfsi.mismatch + TEM_USED*CTRL.npp/CTRL.Js - state[2];
         derivative[2] = -LUENBERGER_GAIN_3*hfsi.mismatch;
         // printf("%g, %g, %g\n", CTRL.timebase, state[2], derivative[2]);
+        #undef OMG_USED
+        #undef TEM_USED
     }
     void luenberger_filter(double theta_d_raw){
         static double state[3];
 
         RK4_333_general(dynamics_position_observer, theta_d_raw, state, TS);
 
-        // DEBUG HERE: WHY 90 deg BIAS IS NEEDED? AND WHY IT IS SPEED DEPENDENT (to keep closed-loop sensorless control stable)???
-        // 施密特触发器
-        static double bias = + 0.5*M_PI;
-        if(state[1]<-0.5){
-            bias = - 0.5*M_PI;
-        }else if(state[1]>0.5){
-            bias = + 0.5*M_PI;
-        }
-
-        hfsi.theta_d            = state[0] + bias;
+        // // DEBUG HERE: WHY 90 deg BIAS IS NEEDED? AND WHY IT IS SPEED DEPENDENT (to keep closed-loop sensorless control stable)???
+        // // 施密特触发器
+        // static double bias = + 0.5*M_PI;
+        // if(state[1]<-0.5){
+        //     bias = - 0.5*M_PI;
+        // }else if(state[1]>0.5){
+        //     bias = + 0.5*M_PI;
+        // }
+        // hfsi.theta_d            = state[0] + bias;
 
         if(state[0]>M_PI){
             state[0] -= 2*M_PI;
@@ -464,12 +482,14 @@ void observation(){
             state[0] += 2*M_PI;
         }
 
-        if(hfsi.theta_d>M_PI){
-            hfsi.theta_d -= 2*M_PI;
-        }else if(hfsi.theta_d<-M_PI){
-            hfsi.theta_d += 2*M_PI;
-        }
+        // hfsi.theta_d            = state[0] + 70.0/180*M_PI;
+        // if(hfsi.theta_d>M_PI){
+        //     hfsi.theta_d -= 2*M_PI;
+        // }else if(hfsi.theta_d<-M_PI){
+        //     hfsi.theta_d += 2*M_PI;
+        // }
 
+        hfsi.theta_d            = state[0];
         hfsi.omg_elec           = state[1];
         hfsi.pseudo_load_torque = state[2];
     }
@@ -479,44 +499,50 @@ void observation(){
 
         hfsi.test_signal_al = ACM.ial;
         hfsi.test_signal_be = ACM.ibe;
+        // int i;
+        // for(i=0;i<10;++i)
         {
-            // hfsi.theta_filter = sm.theta_d;
-            hfsi.theta_filter = hfsi.theta_d;
+            static int dfe_counter = 0; 
+            if(dfe_counter++==HFSI_CEILING){
+                dfe_counter = 0;
 
-            hfsi.test_signal_M = AB2M(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-            hfsi.test_signal_T = AB2T(hfsi.test_signal_al, hfsi.test_signal_be, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+                // HPF
+                double LAST_IS_HPF[2];
+                double DELTA_IS_HPF[2];
+                LAST_IS_HPF[0] = IS_HPF(0);
+                LAST_IS_HPF[1] = IS_HPF(1);
+                double LAST_M_HPF = hfsi.M_hpf;
+                double LAST_T_HPF = hfsi.T_hpf;
+                hfsi.M_hpf = hfsi.test_signal_M - hfsi.M_lpf;
+                hfsi.T_hpf = hfsi.test_signal_T - hfsi.T_lpf;
+                IS_HPF(0) = MT2A(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+                IS_HPF(1) = MT2B(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
-            // LPF
-            RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, TS);
-            RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, TS);
-            IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-            IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+                // My method
+                double DELTA_M_HPF;
+                double DELTA_T_HPF;
+                DELTA_M_HPF = hfsi.M_hpf - LAST_M_HPF;
+                DELTA_T_HPF = hfsi.T_hpf - LAST_T_HPF;
+                hfsi.tilde_theta_d = 0.5 * atan2(-DELTA_T_HPF, -DELTA_M_HPF + hfsi.h * hfsi.LAST_uM * (CTRL.Ld+CTRL.Lq)/(2*CTRL.Ld*CTRL.Lq));
 
-            // HPF
-            double LAST_IS_HPF[2];
-            double DELTA_IS_HPF[2];
-            LAST_IS_HPF[0] = IS_HPF(0);
-            LAST_IS_HPF[1] = IS_HPF(1);
-            hfsi.M_hpf = hfsi.test_signal_M - hfsi.M_lpf;
-            hfsi.T_hpf = hfsi.test_signal_T - hfsi.T_lpf;
-            IS_HPF(0) = MT2A(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-            IS_HPF(1) = MT2B(hfsi.M_hpf, hfsi.T_hpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
-
-            DELTA_IS_HPF[0] = IS_HPF(0) - LAST_IS_HPF[0];
-            DELTA_IS_HPF[1] = IS_HPF(1) - LAST_IS_HPF[1];
-            hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]);
-            if(hfsi.theta_d_raw>M_PI){
-                printf("%g", hfsi.theta_d_raw/M_PI*180);
-                hfsi.theta_d_raw -= 2*M_PI;
-            }else if(hfsi.theta_d_raw<-M_PI){
-                printf("%g", hfsi.theta_d_raw/M_PI*180);
-                hfsi.theta_d_raw += 2*M_PI;
+                // Yoon's method
+                DELTA_IS_HPF[0] = IS_HPF(0) - LAST_IS_HPF[0];
+                DELTA_IS_HPF[1] = IS_HPF(1) - LAST_IS_HPF[1];
+                hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]);
+                // hfsi.theta_d_raw = atan2(DELTA_IS_HPF[0], DELTA_IS_HPF[1]); # wrong: you will see a sinusoidal waveform in position error.
+                if(hfsi.theta_d_raw>M_PI){
+                    printf("%g", hfsi.theta_d_raw/M_PI*180);
+                    hfsi.theta_d_raw -= 2*M_PI;
+                }else if(hfsi.theta_d_raw<-M_PI){
+                    printf("%g", hfsi.theta_d_raw/M_PI*180);
+                    hfsi.theta_d_raw += 2*M_PI;
+                }
             }
+            luenberger_filter(hfsi.theta_d_raw);
         }
         // IS_C(0) = IS_LPF(0); // The waveform of filtered currents looks good but it is still delayed and that is detrimental to control system stability.
         // IS_C(1) = IS_LPF(1); 
 
-        luenberger_filter(hfsi.theta_d_raw);
     }
 #endif
 
