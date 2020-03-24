@@ -216,15 +216,15 @@ int main(){
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
         if(CTRL.timebase>12){
-            ACM.rpm_cmd = 0;
+            ACM.rpm_cmd = 0*-40;
         }else if(CTRL.timebase>9){
             ACM.rpm_cmd = 0;
         }else if(CTRL.timebase>6){
-            ACM.rpm_cmd = -40;
+            ACM.rpm_cmd = 40;
         }else if(CTRL.timebase>3){
-            ACM.rpm_cmd = -20;
+            ACM.rpm_cmd = 20;
         }else{
-            ACM.rpm_cmd = -10;
+            ACM.rpm_cmd = 10;
         }
 
         /* Load Torque */
