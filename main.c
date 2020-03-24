@@ -98,6 +98,7 @@ void RK_Linear(double t, double *x, double hs){
         // derivatives
         ACM.x_dot[i] = (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6.0 / hs; 
     }
+    #undef NS
 }
 
 
@@ -141,17 +142,23 @@ int machine_simulation(){
     }
 }
 void measurement(){
+    // Executed every TS
+
+    // Voltage measurement
     US_C(0) = CTRL.ual;
     US_C(1) = CTRL.ube;
     US_P(0) = US_C(0);
     US_P(1) = US_C(1);
 
+
+    // Current measurement
     IS_C(0) = ACM.ial;
     IS_C(1) = ACM.ibe;
+
+    // Position and speed measurement
     sm.omg_elec = ACM.x[2];
     sm.omg_mech = sm.omg_elec * sm.npp_inv;
     sm.theta_d = ACM.x[3];
-    // sm.theta_r = sm.theta_d;
 }
 void inverter_model(){
 
@@ -176,20 +183,24 @@ void inverter_model(){
 }
 
 int main(){
-    
+    if(SENSORLESS_CONTROL_HFSI==true){
+        printf("Sensorless using HFSI.\n");
+    }else{
+        if(SENSORLESS_CONTROL==true){
+            printf("Sensorless using observer.\n");
+        }
+    }
     printf("NUMBER_OF_STEPS: %d\n\n", NUMBER_OF_STEPS);
 
     /* Initialization */
     Machine_init();
     CTRL_init();
     sm_init();
-    ob_init();
+    // ob_init();
 
     FILE *fw;
     fw = fopen(DATA_FILE_NAME, "w");
     printf("%s\n", DATA_FILE_NAME);
-    printf("%s\n", DATA_FILE_NAME);
-    printf("%s\n", DATA_FILE_NAME);    
     write_header_to_file(fw);
 
     /* MAIN LOOP */
@@ -203,16 +214,24 @@ int main(){
 
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
-        cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 100); // timebase, instant, interval, rpm_cmd
-        // ACM.rpm_cmd = 500;
-        // if(CTRL.timebase>10){
-        //     ACM.rpm_cmd = 2000;
-        // }
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
+        if(CTRL.timebase>12){
+            ACM.rpm_cmd = 0;
+        }else if(CTRL.timebase>9){
+            ACM.rpm_cmd = 0;
+        }else if(CTRL.timebase>6){
+            ACM.rpm_cmd = -40;
+        }else if(CTRL.timebase>3){
+            ACM.rpm_cmd = -20;
+        }else{
+            ACM.rpm_cmd = -10;
+        }
 
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
-        ACM.Tload = 2 * sign(ACM.rpm);
+        ACM.Tload = 2 * sign(ACM.rpm); // speed-direction-dependent load
+        // ACM.Tload = 2 * ACM.rpm/20; // speed-dependent load
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -228,11 +247,13 @@ int main(){
 
             measurement();
 
-            observation();
+            // observation();
 
             write_data_to_file(fw);
 
             control(ACM.rpm_cmd, 0);
+
+            hfsi_do();
         }
 
         inverter_model();
@@ -251,7 +272,7 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),ob.xEEMF_dummy[0],error(xEEMF_dummy),OB_OMG,er_omg\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1),M_hpf,T_hpf,HFSI_POS,HFSI_POS_ER,hfsi.theta_d,ER(theta_d),hfsi.omg_elec,ER(omg_elec),hfsi.TL,mismatch\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -269,11 +290,13 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                     ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
                     CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
                     ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,sin(ACM.theta_d-ACM.theta_d__eemf),
-                    OB_POS, sin(ACM.theta_d-OB_POS), OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, ob.xEEMF_dummy[1], OB_EEMF_BE-ob.xEEMF_dummy[1], OB_OMG, ACM.omg_elec-OB_OMG
+                    hfsi.test_signal_al, hfsi.test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1),
+                    hfsi.M_hpf, hfsi.T_hpf, hfsi.theta_d_raw, sin(ACM.theta_d-hfsi.theta_d_raw),
+                    hfsi.theta_d, sin(ACM.theta_d-hfsi.theta_d), hfsi.omg_elec, sm.omg_elec-hfsi.omg_elec, hfsi.pseudo_load_torque*CTRL.Js/CTRL.npp, hfsi.mismatch
                     );
         }
     }

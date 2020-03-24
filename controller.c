@@ -39,9 +39,10 @@ void CTRL_init(){
     CTRL.Ld = ACM.Ld;
     CTRL.Lq = ACM.Lq;
 
-    CTRL.Tload = 0.0;
-    CTRL.rpm_cmd = 0.0;
+    // CTRL.Tload = 0.0;
+    // CTRL.rpm_cmd = 0.0;
 
+    CTRL.npp = ACM.npp;
     CTRL.Js = ACM.Js;
     CTRL.Js_inv = 1.0 / CTRL.Js;
 
@@ -69,6 +70,9 @@ void CTRL_init(){
     CTRL.id_cmd = 0.0;
     CTRL.iq_cmd = 0.0;
 
+    CTRL.Tem = 0.0;
+    CTRL.Tem_cmd = 0.0;
+
     // ver. IEMDC
     CTRL.PID_speed.Kp = SPEED_LOOP_PID_PROPORTIONAL_GAIN;
     CTRL.PID_speed.Ti = SPEED_LOOP_PID_INTEGRAL_TIME_CONSTANT;
@@ -93,14 +97,19 @@ void CTRL_init(){
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed/position or measured speed/position
     #if SENSORLESS_CONTROL
-        // getch("Not Implemented");
-        // CTRL.omg__fb    ;
-        // CTRL.omega_syn ;
-        CTRL.omg__fb     = OB_OMG;
-        CTRL.theta_d__fb = OB_POS;
+        #if SENSORLESS_CONTROL_HFSI
+            CTRL.omg__fb     = hfsi.omg_elec;
+            CTRL.theta_d__fb = hfsi.theta_d;
+        #else
+            // getch("Not Implemented");
+            // CTRL.omg__fb    ;
+            // CTRL.omega_syn ;
+            CTRL.omg__fb     = OB_OMG;
+            CTRL.theta_d__fb = OB_POS;
+        #endif
     #else
         // from measurement() in main.c
-        CTRL.omg__fb = sm.omg_elec;
+        CTRL.omg__fb     = sm.omg_elec;
         CTRL.theta_d__fb = sm.theta_d;
     #endif
 
@@ -136,6 +145,10 @@ void control(double speed_cmd, double speed_cmd_dot){
     CTRL.id__fb = AB2M(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
     CTRL.iq__fb = AB2T(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
 
+    // For luenberger position observer for HFSI
+    CTRL.Tem     = CTRL.npp * (CTRL.KE*CTRL.iq__fb + (CTRL.Ld-CTRL.Lq)*CTRL.id__fb*CTRL.iq__fb);
+    CTRL.Tem_cmd = CTRL.npp * (CTRL.KE*CTRL.iq_cmd + (CTRL.Ld-CTRL.Lq)*CTRL.id_cmd*CTRL.iq_cmd);
+
     // Voltage command in d-q frame
     double vd, vq;
     vd = - PID(&CTRL.PID_id, CTRL.id__fb-CTRL.id_cmd);
@@ -144,6 +157,21 @@ void control(double speed_cmd, double speed_cmd_dot){
     // Current loop decoupling (skipped for now)
     CTRL.ud_cmd = vd;
     CTRL.uq_cmd = vq;
+
+    #ifdef HFSI_ON
+        // Extra excitation for observation
+        {
+            static int square_wave_internal_register = 1;
+            static int dfe_counter = 0; 
+            #define HFSI_VOLTAGE 5 // V
+            #define HFSI_CEILING 1
+            if(dfe_counter++==HFSI_CEILING){
+                dfe_counter = 0;
+                square_wave_internal_register *= -1;
+            }
+            CTRL.ud_cmd += HFSI_VOLTAGE*square_wave_internal_register;
+        }
+    #endif
 
     // Voltage command in alpha-beta frame
     CTRL.ual = MT2A(CTRL.ud_cmd, CTRL.uq_cmd, CTRL.cosT, CTRL.sinT);
@@ -155,13 +183,13 @@ void control(double speed_cmd, double speed_cmd_dot){
 /* Command */
 void cmd_fast_speed_reversal(double timebase, double instant, double interval, double rpm_cmd){
     if(timebase > instant+2*interval){
-        ACM.rpm_cmd = 0*150 + rpm_cmd;
+        ACM.rpm_cmd = 1*1500 + rpm_cmd;
     }else if(timebase > instant+interval){
-        ACM.rpm_cmd = 0*150 + -rpm_cmd;
+        ACM.rpm_cmd = 1*1500 + -rpm_cmd;
     }else if(timebase > instant){
-        ACM.rpm_cmd = 0*150 + rpm_cmd;
+        ACM.rpm_cmd = 1*1500 + rpm_cmd;
     }else{
-        ACM.rpm_cmd = 50; // default initial command
+        ACM.rpm_cmd = 20; // default initial command
     }
 }
 
