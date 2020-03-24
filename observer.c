@@ -189,7 +189,7 @@ void sm_init(){
         }else if(state[0]<-M_PI){
             state[0] += 2*M_PI;
         }
-        hfsi.theta_d            = state[0] - 0.5*M_PI;
+        hfsi.theta_d            = state[0] - 0.5*M_PI; // DEBUG HERE
         hfsi.omg_elec           = state[1];
         hfsi.pseudo_load_torque = state[2];
     }

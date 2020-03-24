@@ -23,7 +23,7 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [Both] master: contain all the features of the branches mentioned above. The master branch is not updated anymore from this point, because I realized that having both IM and PMSM codes in one place is a silly idea.
 - [PMSM] commissioning_pmsm: (under developing) self-commissioning procedure for permanent magnet motor.
 - [PMSM] eemf: (still debugging) sensorless control based on extended emf method proposed by Zhiqian Chen et al. (2003). Sensorless open loop works but closed-loop has problems.
-
+- [PMSM] hfsi-yoon: pulsating type square wave high frequency signal injection method based sensorless control for motor with saliency.
 
 ## Visualization
 - The plots are made using package matplotlib. 
