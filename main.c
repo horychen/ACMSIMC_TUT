@@ -187,10 +187,10 @@ void measurement(){
     local_ial_lpf = MT2A(local_M_lpf, local_T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
     local_ibe_lpf = MT2B(local_M_lpf, local_T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
-    // IS_C(0) = local_ial_lpf; //
-    // IS_C(1) = local_ibe_lpf; //
-    IS_C(0) = ACM.ial;
-    IS_C(1) = ACM.ibe;
+    IS_C(0) = local_ial_lpf; // Using 50 Hz cutoff low-pass filtered currents is very effective to apply more square wave like d-axis voltage
+    IS_C(1) = local_ibe_lpf; 
+    // IS_C(0) = ACM.ial;
+    // IS_C(1) = ACM.ibe;
 
     // Position and speed measurement
     sm.omg_elec = ACM.x[2];
