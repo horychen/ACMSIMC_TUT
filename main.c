@@ -215,19 +215,23 @@ int main(){
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
-        ACM.rpm_cmd = -10;
         if(CTRL.timebase>12){
             ACM.rpm_cmd = 0;
-        }else if(CTRL.timebase>8){
+        }else if(CTRL.timebase>9){
+            ACM.rpm_cmd = 0;
+        }else if(CTRL.timebase>6){
             ACM.rpm_cmd = -40;
-        }else if(CTRL.timebase>4){
+        }else if(CTRL.timebase>3){
             ACM.rpm_cmd = -20;
+        }else{
+            ACM.rpm_cmd = -10;
         }
 
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
         ACM.Tload = 2 * sign(ACM.rpm); // speed-direction-dependent load
+        // ACM.Tload = 2 * ACM.rpm/20; // speed-dependent load
 
         /* Simulated ACM */
         if(machine_simulation()){ 
