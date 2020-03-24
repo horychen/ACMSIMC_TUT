@@ -504,6 +504,12 @@ void observation(){
             if(dfe_counter++==HFSI_CEILING){
                 dfe_counter = 0;
 
+                // LPF
+                RK4_111_general(dynamics_lpf, hfsi.test_signal_M, &hfsi.M_lpf, hfsi.h);
+                RK4_111_general(dynamics_lpf, hfsi.test_signal_T, &hfsi.T_lpf, hfsi.h);
+                IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+                IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+
                 // HPF
                 double LAST_IS_HPF[2];
                 double DELTA_IS_HPF[2];
@@ -521,18 +527,20 @@ void observation(){
                 double DELTA_T_HPF;
                 DELTA_M_HPF = hfsi.M_hpf - LAST_M_HPF;
                 DELTA_T_HPF = hfsi.T_hpf - LAST_T_HPF;
+                // hfsi.LAST_uM = HFSI_VOLTAGE*hfsi.square_wave_internal_regisqter;
+                hfsi.LAST_uM = -HFSI_VOLTAGE*hfsi.square_wave_internal_register;
                 hfsi.tilde_theta_d = 0.5 * atan2(-DELTA_T_HPF, -DELTA_M_HPF + hfsi.h * hfsi.LAST_uM * (CTRL.Ld+CTRL.Lq)/(2*CTRL.Ld*CTRL.Lq));
 
                 // Yoon's method
                 DELTA_IS_HPF[0] = IS_HPF(0) - LAST_IS_HPF[0];
                 DELTA_IS_HPF[1] = IS_HPF(1) - LAST_IS_HPF[1];
-                hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]);
+                hfsi.theta_d_raw = atan2(DELTA_IS_HPF[1], DELTA_IS_HPF[0]) + 0.5*M_PI; // 90 DEGREE BIAS MOVED HERE
                 // hfsi.theta_d_raw = atan2(DELTA_IS_HPF[0], DELTA_IS_HPF[1]); # wrong: you will see a sinusoidal waveform in position error.
                 if(hfsi.theta_d_raw>M_PI){
-                    printf("%g", hfsi.theta_d_raw/M_PI*180);
+                    // printf("%g", hfsi.theta_d_raw/M_PI*180);
                     hfsi.theta_d_raw -= 2*M_PI;
                 }else if(hfsi.theta_d_raw<-M_PI){
-                    printf("%g", hfsi.theta_d_raw/M_PI*180);
+                    // printf("%g", hfsi.theta_d_raw/M_PI*180);
                     hfsi.theta_d_raw += 2*M_PI;
                 }
             }

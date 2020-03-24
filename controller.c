@@ -161,8 +161,6 @@ void control(double speed_cmd, double speed_cmd_dot){
     #ifdef HFSI_ON
         // Extra excitation for observation
         {
-            hfsi.LAST_uM = HFSI_VOLTAGE*hfsi.square_wave_internal_register;
-
             static int dfe_counter = 0; 
             if(dfe_counter++==HFSI_CEILING){
                 dfe_counter = 0;
