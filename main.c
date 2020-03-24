@@ -141,6 +141,10 @@ int machine_simulation(){
         return true;        
     }
 }
+
+void dynamics_lpf_local(double input, double *state, double *derivative){
+    derivative[0] = (50*2*M_PI) * ( input - *state );
+}
 void measurement(){
     // Executed every TS
 
@@ -158,6 +162,10 @@ void measurement(){
     // IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
     {
+
+        hfsi.test_signal_al = ACM.ial;
+        hfsi.test_signal_be = ACM.ibe;
+
         // hfsi.theta_filter = sm.theta_d;
         hfsi.theta_filter = hfsi.theta_d;
 
@@ -170,7 +178,17 @@ void measurement(){
         IS_LPF(0) = MT2A(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
         IS_LPF(1) = MT2B(hfsi.M_lpf, hfsi.T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
     }
+    static double local_M_lpf = 0.0;
+    static double local_T_lpf = 0.0;
+    static double local_ial_lpf = 0.0;
+    static double local_ibe_lpf = 0.0;
+    RK4_111_general(dynamics_lpf_local, hfsi.test_signal_M, &local_M_lpf, TS);
+    RK4_111_general(dynamics_lpf_local, hfsi.test_signal_T, &local_T_lpf, TS);
+    local_ial_lpf = MT2A(local_M_lpf, local_T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
+    local_ibe_lpf = MT2B(local_M_lpf, local_T_lpf, cos(hfsi.theta_filter), sin(hfsi.theta_filter));
 
+    // IS_C(0) = local_ial_lpf; //
+    // IS_C(1) = local_ibe_lpf; //
     IS_C(0) = ACM.ial;
     IS_C(1) = ACM.ibe;
 

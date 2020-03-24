@@ -497,8 +497,6 @@ void observation(){
         // luenberger_filter() needs CTRL.Tem so hfsi_do() should executed after contorl().
         // If filtered currents are used instead of IS_C, move everything before luenberger_filter() to measurement(). <- Not suggested: lpf ruins current loop control.
 
-        hfsi.test_signal_al = ACM.ial;
-        hfsi.test_signal_be = ACM.ibe;
         // int i;
         // for(i=0;i<10;++i)
         {
