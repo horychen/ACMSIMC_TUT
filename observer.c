@@ -307,6 +307,32 @@ void observation(){
 // ------------------------------------------------- HFSI
 
 
+
+double difference_between_two_angles(double first, double second){
+    while(first>2*M_PI){
+        first-=2*M_PI;
+    }
+    while(second>2*M_PI){
+        second-=2*M_PI;
+    }
+
+    while(first<0.0){
+        first+=2*M_PI;
+    }
+    while(second<0.0){
+        second+=2*M_PI;
+    }
+
+    if(fabs(first-second)<M_PI){
+        return first-second;
+    }else{
+        if(first>second){
+            return first-2*M_PI-second;
+        }else{                
+            return first+2*M_PI-second;
+        }
+    }
+}
 #ifdef HFSI_ON
     void dynamics_lpf(double input, double *state, double *derivative){
         derivative[0] = LPF_TIME_CONST_INVERSE * ( input - *state );
@@ -413,31 +439,6 @@ void observation(){
             hfsi.h = TS;
         }else{
             printf("NOT IMPLEMENTED\n");
-        }
-    }
-    double difference_between_two_angles(double first, double second){
-        while(first>2*M_PI){
-            first-=2*M_PI;
-        }
-        while(second>2*M_PI){
-            second-=2*M_PI;
-        }
-
-        while(first<0.0){
-            first+=2*M_PI;
-        }
-        while(second<0.0){
-            second+=2*M_PI;
-        }
-
-        if(fabs(first-second)<M_PI){
-            return first-second;
-        }else{
-            if(first>second){
-                return first-2*M_PI-second;
-            }else{                
-                return first+2*M_PI-second;
-            }
         }
     }
     void dynamics_position_observer(double input, double *state, double *derivative){

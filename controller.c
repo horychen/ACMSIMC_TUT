@@ -108,9 +108,18 @@ void control(double speed_cmd, double speed_cmd_dot){
             CTRL.theta_d__fb = OB_POS;
         #endif
     #else
+        // Rotor position compensation with id=0 control (具体放在哪里执行还需要考虑一下)
+        static double compensation4theta_d = 0.0; // rad
+        double threshold_speed_steady_state = 0.5; // rad/s
+        // #define SOURCE (1000*CTRL.id__fb)
+        #define SOURCE (-(CTRL.ud_cmd - CTRL.R*CTRL.id__fb + CTRL.omg__fb*CTRL.Lq*CTRL.iq__fb))
+        if(fabs(CTRL.omg_ctrl_err) < threshold_speed_steady_state){
+            compensation4theta_d += TS * 1 * SOURCE * sign(ACM.rpm_cmd);
+        }
+
         // from measurement() in main.c
         CTRL.omg__fb     = sm.omg_elec;
-        CTRL.theta_d__fb = sm.theta_d;
+        CTRL.theta_d__fb = sm.theta_d + compensation4theta_d;
     #endif
 
     // Input 2 is feedback: measured current 
