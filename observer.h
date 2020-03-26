@@ -112,7 +112,7 @@ void observation();
 // ----------------------------- HFSI
 
 
-// #define HFSI_ON
+#define HFSI_ON
 #define SENSORLESS_CONTROL_HFSI true
 
 #define HFSI_VOLTAGE 5 // V

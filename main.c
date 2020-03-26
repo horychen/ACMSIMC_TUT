@@ -173,7 +173,7 @@ void measurement(){
     #endif
 
     // Position and speed measurement
-    sm.theta_d  = ACM.x[3] + 30.0/180*M_PI;
+    sm.theta_d  = ACM.x[3]; // + 30.0/180*M_PI;
     sm.omg_elec = ACM.x[2];
     sm.omg_mech = sm.omg_elec * sm.npp_inv;
 }
