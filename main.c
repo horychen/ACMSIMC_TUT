@@ -173,7 +173,7 @@ void measurement(){
     #endif
 
     // Position and speed measurement
-    sm.theta_d  = ACM.x[3] + 15.0/180*M_PI;
+    sm.theta_d  = ACM.x[3] + 30.0/180*M_PI;
     sm.omg_elec = ACM.x[2];
     sm.omg_mech = sm.omg_elec * sm.npp_inv;
 }
@@ -235,8 +235,10 @@ int main(){
         /* Command (Speed or Position) */
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
-        if(CTRL.timebase>12){
-            ACM.rpm_cmd = 40;
+        if(CTRL.timebase>14){
+            ACM.rpm_cmd = 40; // 40
+        }else if(CTRL.timebase>12){
+            ACM.rpm_cmd = 40; // 40
         }else if(CTRL.timebase>9){
             ACM.rpm_cmd = 0;
         }else if(CTRL.timebase>6){
@@ -250,7 +252,7 @@ int main(){
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
-        ACM.Tload = 2 * sign(ACM.rpm); // speed-direction-dependent load
+        ACM.Tload = 4 * sign(ACM.rpm); // speed-direction-dependent load
         // ACM.Tload = 2 * ACM.rpm/20; // speed-dependent load
 
         /* Simulated ACM */
@@ -297,7 +299,7 @@ void write_header_to_file(FILE *fw){
     #ifdef HFSI_ON
         fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg,test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1),M_hpf,T_hpf,HFSI_POS,HFSI_POS_ER,hfsi.theta_d,ER(theta_d),hfsi.omg_elec,ER(omg_elec),hfsi.TL,mismatch\n");
     #else
-        fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud_cmd[V],uq_cmd[V],id[A],id_err[A],iq_cmd[A],iq_err[A],CTRL_POS_ERR,MEAS_POS_ERR\n");
+        fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud_cmd[V],uq_cmd[V],id[A],id_err[A],iq_cmd[A],iq_err[A],CTRL_POS_ERR,MEAS_POS_ERR,theta_d_harnefors,POS_ERR_Harnefors,omg_harnefors,OMG_ERR_Harnefors\n");
     #endif
     {
         FILE *fw2;
@@ -307,6 +309,8 @@ void write_header_to_file(FILE *fw){
         fclose(fw2);
     }
 }
+extern double theta_d_harnefors;
+extern double omg_harnefors;
 void write_data_to_file(FILE *fw){
     static int bool_animate_on = false;
     static int j=0,jj=0; // j,jj for down sampling
@@ -334,9 +338,10 @@ void write_data_to_file(FILE *fw){
             if(++j == DOWN_SAMPLE)
             {
                 j=0;
-                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
                         ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
-                        CTRL.id__fb, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, difference_between_two_angles(ACM.x[3], CTRL.theta_d__fb)/M_PI*180, difference_between_two_angles(ACM.x[3], sm.theta_d)/M_PI*180
+                        CTRL.id__fb, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, difference_between_two_angles(ACM.x[3], CTRL.theta_d__fb)/M_PI*180, difference_between_two_angles(ACM.x[3], sm.theta_d)/M_PI*180,
+                        theta_d_harnefors, difference_between_two_angles(ACM.theta_d, theta_d_harnefors)/M_PI*180, omg_harnefors*RAD_PER_SEC_2_RPM, (sm.omg_elec-omg_harnefors)*RAD_PER_SEC_2_RPM
                         );
             }
         }

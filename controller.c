@@ -94,6 +94,8 @@ void CTRL_init(){
     CTRL.PID_iq.i_limit = CURRENT_LOOP_LIMIT_VOLTS; // unit: Volt, 350V->max 1300rpm
     CTRL.PID_iq.i_state = 0.0;
 }
+double theta_d_harnefors = 0.0;
+double omg_harnefors = 0.0;
 void control(double speed_cmd, double speed_cmd_dot){
     // Input 1 is feedback: estimated speed/position or measured speed/position
     #if SENSORLESS_CONTROL
@@ -108,18 +110,42 @@ void control(double speed_cmd, double speed_cmd_dot){
             CTRL.theta_d__fb = OB_POS;
         #endif
     #else
-        // Rotor position compensation with id=0 control (具体放在哪里执行还需要考虑一下)
-        static double compensation4theta_d = 0.0; // rad
-        double threshold_speed_steady_state = 0.5; // rad/s
-        // #define SOURCE (1000*CTRL.id__fb)
-        #define SOURCE (-(CTRL.ud_cmd - CTRL.R*CTRL.id__fb + CTRL.omg__fb*CTRL.Lq*CTRL.iq__fb))
-        if(fabs(CTRL.omg_ctrl_err) < threshold_speed_steady_state){
-            compensation4theta_d += TS * 1 * SOURCE * sign(ACM.rpm_cmd);
-        }
 
-        // from measurement() in main.c
-        CTRL.omg__fb     = sm.omg_elec;
-        CTRL.theta_d__fb = sm.theta_d + compensation4theta_d;
+        double d_axis_emf;
+        double q_axis_emf;
+        #define LAMBDA 2
+        double lambda_s = LAMBDA * sign(omg_harnefors);
+        double alpha_bw_lpf = 0.1*(1500*RPM_2_RAD_PER_SEC) + 1*2*LAMBDA*fabs(omg_harnefors);
+        // d_axis_emf = CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + omg_harnefors*1.0*CTRL.Lq*CTRL.iq_cmd; // If Ld=Lq.
+        // q_axis_emf = CTRL.uq_cmd - 1*CTRL.R*CTRL.iq_cmd - omg_harnefors*1.0*CTRL.Ld*CTRL.id_cmd; // If Ld=Lq.
+        d_axis_emf = CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + omg_harnefors*1.0*CTRL.Lq*CTRL.iq_cmd; // eemf
+        q_axis_emf = CTRL.uq_cmd - 1*CTRL.R*CTRL.iq_cmd - omg_harnefors*1.0*CTRL.Lq*CTRL.id_cmd; // eemf
+        // Note it is bad habit to write numerical integration explictly like this. The states on the right may be accencidentally modified on the run.
+        theta_d_harnefors += TS * omg_harnefors;
+        omg_harnefors += TS * alpha_bw_lpf * ( (q_axis_emf - lambda_s*d_axis_emf)/(CTRL.KE+(CTRL.Ld-CTRL.Lq)*CTRL.id_cmd) - omg_harnefors );
+        while(theta_d_harnefors>M_PI) theta_d_harnefors-=2*M_PI;
+        while(theta_d_harnefors<-M_PI) theta_d_harnefors+=2*M_PI;
+
+        CTRL.omg__fb     = omg_harnefors;
+        CTRL.theta_d__fb = theta_d_harnefors;
+
+        // {
+        //     // Rotor position compensation with id=0 control (具体放在哪里执行还需要考虑一下)
+        //     static double compensation4theta_d = 0.0; // rad
+        //     double threshold_speed_steady_state = 5; // rad/s
+
+        //     // 转速高了以后，差几度，对d轴电压的值影响不大，所以反而无法检测出来有问题了？
+        //     // #define SOURCE (1000*CTRL.id__fb)
+        //     #define SOURCE (-(CTRL.ud_cmd - 1*CTRL.R*CTRL.id__fb + CTRL.omg__fb*1.0*CTRL.Lq*CTRL.iq__fb))
+        //     // #define SOURCE (-(CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + CTRL.omg__fb*1.0*CTRL.Lq*CTRL.iq_cmd))
+
+        //     if(fabs(CTRL.omg_ctrl_err) < threshold_speed_steady_state){
+        //         compensation4theta_d += TS * 10 * SOURCE * sign(ACM.rpm_cmd);
+
+        //     // from measurement() in main.c
+        //     CTRL.omg__fb     = sm.omg_elec;
+        //     CTRL.theta_d__fb = sm.theta_d + compensation4theta_d;
+        // } 
     #endif
 
     // Input 2 is feedback: measured current 

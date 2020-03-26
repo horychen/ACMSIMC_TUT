@@ -7,7 +7,7 @@ from collections import OrderedDict as O
 import pandas as pd
 # plot style
 style = np.random.choice(plt.style.available); print(style); 
-plt.style.use('ggplot') # ['grayscale', u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
+plt.style.use('grayscale') # ['grayscale', u'dark_background', u'bmh', u'grayscale', u'ggplot', u'fivethirtyeight']
 # plot setting
 mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.family'] = 'STIXGeneral'
