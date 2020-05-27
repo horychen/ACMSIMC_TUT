@@ -2,7 +2,7 @@
 
 /* PI Control
  * */
-double PI(struct PI_Reg *r, double err){
+double PID(struct PID_Reg *r, double err){
     #define I_STATE r->i_state
     #define I_LIMIT r->i_limit
     double output;
@@ -24,8 +24,6 @@ double PI(struct PI_Reg *r, double err){
 }
 
 
-#if MACHINE_TYPE == INDUCTION_MACHINE
-#elif MACHINE_TYPE == SYNCHRONOUS_MACHINE
 /* Initialization */
 struct ControllerForExperiment CTRL;
 void CTRL_init(){
@@ -41,284 +39,178 @@ void CTRL_init(){
     CTRL.Ld = ACM.Ld;
     CTRL.Lq = ACM.Lq;
 
-    CTRL.Tload = 0.0;
-    CTRL.rpm_cmd = 0.0;
+    // CTRL.Tload = 0.0;
+    // CTRL.rpm_cmd = 0.0;
 
+    CTRL.npp = ACM.npp;
     CTRL.Js = ACM.Js;
     CTRL.Js_inv = 1.0 / CTRL.Js;
 
-    CTRL.omg_fb = 0.0;
-    CTRL.ial_fb = 0.0;
-    CTRL.ibe_fb = 0.0;
-    CTRL.psi_mu_al_fb = 0.0;
-    CTRL.psi_mu_be_fb = 0.0;
+    CTRL.omg__fb = 0.0;
+    CTRL.ial__fb = 0.0;
+    CTRL.ibe__fb = 0.0;
+    CTRL.psi_mu_al__fb = 0.0;
+    CTRL.psi_mu_be__fb = 0.0;
 
     CTRL.rotor_flux_cmd = 0.0; // id=0 control
 
     CTRL.omg_ctrl_err = 0.0;
     CTRL.speed_ctrl_err = 0.0;
 
-    CTRL.iMs = 0.0;
-    CTRL.iTs = 0.0;
-
-    CTRL.theta_M = 0.0;
     CTRL.cosT = 1.0;
     CTRL.sinT = 0.0;
 
     CTRL.omega_syn = 0.0;
 
-    CTRL.uMs_cmd = 0.0;
-    CTRL.uTs_cmd = 0.0;
-    CTRL.iMs_cmd = 0.0;
-    CTRL.iTs_cmd = 0.0;
+    CTRL.theta_d__fb = 0.0;
+    CTRL.id__fb = 0.0;
+    CTRL.iq__fb = 0.0;
+    CTRL.ud_cmd = 0.0;
+    CTRL.uq_cmd = 0.0;
+    CTRL.id_cmd = 0.0;
+    CTRL.iq_cmd = 0.0;
+
+    CTRL.Tem = 0.0;
+    CTRL.Tem_cmd = 0.0;
 
     // ver. IEMDC
-    CTRL.pi_speed.Kp = 0.5; 
-    CTRL.pi_speed.Ti = 5;
-    CTRL.pi_speed.Ki = (CTRL.pi_speed.Kp*4.77) / CTRL.pi_speed.Ti * (TS*VC_LOOP_CEILING*DOWN_FREQ_EXE_INVERSE);
-    CTRL.pi_speed.i_state = 0.0;
-    CTRL.pi_speed.i_limit = 8;
+    CTRL.PID_speed.Kp = SPEED_LOOP_PID_PROPORTIONAL_GAIN;
+    CTRL.PID_speed.Ti = SPEED_LOOP_PID_INTEGRAL_TIME_CONSTANT;
+    CTRL.PID_speed.Ki = CTRL.PID_speed.Kp / CTRL.PID_speed.Ti * (TS*SPEED_LOOP_CEILING); // 4.77 = 1 / (npp*1/60*2*pi)
+    CTRL.PID_speed.i_limit = SPEED_LOOP_LIMIT_NEWTON_METER;
+    CTRL.PID_speed.i_state = 0.0;
+    printf("Speed PID: Kp=%g, Ki=%g, limit=%g Nm\n", CTRL.PID_speed.Kp, CTRL.PID_speed.Ki/TS, CTRL.PID_speed.i_limit);
 
-    printf("Kp_omg=%g, Ki_omg=%g\n", CTRL.pi_speed.Kp, CTRL.pi_speed.Ki);
+    CTRL.PID_id.Kp = CURRENT_LOOP_PID_PROPORTIONAL_GAIN; // cutoff frequency of 1530 rad/s
+    CTRL.PID_id.Ti = CURRENT_LOOP_PID_INTEGRAL_TIME_CONSTANT;
+    CTRL.PID_id.Ki = CTRL.PID_id.Kp/CTRL.PID_id.Ti*TS; // =0.025
+    CTRL.PID_id.i_limit = CURRENT_LOOP_LIMIT_VOLTS; //350.0; // unit: Volt
+    CTRL.PID_id.i_state = 0.0;
+    printf("Current PID: Kp=%g, Ki=%g, limit=%g V\n", CTRL.PID_id.Kp, CTRL.PID_id.Ki/TS, CTRL.PID_id.i_limit);
 
-    CTRL.pi_iD.Kp = 15; // cutoff frequency of 1530 rad/s
-    CTRL.pi_iD.Ti = 0.08;
-    CTRL.pi_iD.Ki = CTRL.pi_iD.Kp/CTRL.pi_iD.Ti*TS; // =0.025
-    CTRL.pi_iD.i_state = 0.0;
-    CTRL.pi_iD.i_limit = 650; //350.0; // unit: Volt
-
-    CTRL.pi_iQ.Kp = 15;
-    CTRL.pi_iQ.Ti = 0.08;
-    CTRL.pi_iQ.Ki = CTRL.pi_iQ.Kp/CTRL.pi_iQ.Ti*TS;
-    CTRL.pi_iQ.i_state = 0.0;
-    CTRL.pi_iQ.i_limit = 650; // unit: Volt, 350V->max 1300rpm
-
-
-
-    CTRL.pi_iD_PR_pose.Kp = 15/3; // cutoff frequency of 1530 rad/s
-    CTRL.pi_iD_PR_pose.Ti = 0.08;
-    CTRL.pi_iD_PR_pose.Ki = CTRL.pi_iD_PR_pose.Kp/CTRL.pi_iD_PR_pose.Ti*TS; // =0.025
-    CTRL.pi_iD_PR_pose.i_state = 0.0;
-    CTRL.pi_iD_PR_pose.i_limit = 650; //350.0; // unit: Volt
-
-    CTRL.pi_iD_PR_nese.Kp = 15/3; // cutoff frequency of 1530 rad/s
-    CTRL.pi_iD_PR_nese.Ti = 0.08;
-    CTRL.pi_iD_PR_nese.Ki = CTRL.pi_iD_PR_nese.Kp/CTRL.pi_iD_PR_nese.Ti*TS; // =0.025
-    CTRL.pi_iD_PR_nese.i_state = 0.0;
-    CTRL.pi_iD_PR_nese.i_limit = 650; //350.0; // unit: Volt
-
-
-
-    CTRL.pi_iQ_PR_pose.Kp = 15/3; // cutoff frequency of 1530 rad/s
-    CTRL.pi_iQ_PR_pose.Ti = 0.08;
-    CTRL.pi_iQ_PR_pose.Ki = CTRL.pi_iQ_PR_pose.Kp/CTRL.pi_iQ_PR_pose.Ti*TS; // =0.025
-    CTRL.pi_iQ_PR_pose.i_state = 0.0;
-    CTRL.pi_iQ_PR_pose.i_limit = 650; //350.0; // unit: Volt
-
-    CTRL.pi_iQ_PR_nese.Kp = 15/3; // cutoff frequency of 1530 rad/s
-    CTRL.pi_iQ_PR_nese.Ti = 0.08;
-    CTRL.pi_iQ_PR_nese.Ki = CTRL.pi_iQ_PR_nese.Kp/CTRL.pi_iQ_PR_nese.Ti*TS; // =0.025
-    CTRL.pi_iQ_PR_nese.i_state = 0.0;
-    CTRL.pi_iQ_PR_nese.i_limit = 650; //350.0; // unit: Volt
-
-    printf("Kp_cur=%g, Ki_cur=%g\n", CTRL.pi_iD.Kp, CTRL.pi_iD.Ki);
-
-
-    CTRL.count_currentSteadyState = 0;
+    CTRL.PID_iq.Kp = CURRENT_LOOP_PID_PROPORTIONAL_GAIN;
+    CTRL.PID_iq.Ti = CURRENT_LOOP_PID_INTEGRAL_TIME_CONSTANT;
+    CTRL.PID_iq.Ki = CTRL.PID_iq.Kp/CTRL.PID_iq.Ti*TS;
+    CTRL.PID_iq.i_limit = CURRENT_LOOP_LIMIT_VOLTS; // unit: Volt, 350V->max 1300rpm
+    CTRL.PID_iq.i_state = 0.0;
+}
+double theta_d_harnefors = 0.0;
+double omg_harnefors = 0.0;
+void harnefors_scvm(){
+    #define KE_MISMATCH 1.0 // 0.7
+    double d_axis_emf;
+    double q_axis_emf;
+    #define LAMBDA 2
+    double lambda_s = LAMBDA * sign(omg_harnefors);
+    double alpha_bw_lpf = 0.1*(1500*RPM_2_RAD_PER_SEC) + 1*2*LAMBDA*fabs(omg_harnefors);
+    // d_axis_emf = CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + omg_harnefors*1.0*CTRL.Lq*CTRL.iq_cmd; // If Ld=Lq.
+    // q_axis_emf = CTRL.uq_cmd - 1*CTRL.R*CTRL.iq_cmd - omg_harnefors*1.0*CTRL.Ld*CTRL.id_cmd; // If Ld=Lq.
+    d_axis_emf = CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + omg_harnefors*1.0*CTRL.Lq*CTRL.iq_cmd; // eemf
+    q_axis_emf = CTRL.uq_cmd - 1*CTRL.R*CTRL.iq_cmd - omg_harnefors*1.0*CTRL.Lq*CTRL.id_cmd; // eemf
+    // Note it is bad habit to write numerical integration explictly like this. The states on the right may be accencidentally modified on the run.
+    theta_d_harnefors += TS * omg_harnefors;
+    omg_harnefors += TS * alpha_bw_lpf * ( (q_axis_emf - lambda_s*d_axis_emf)/(CTRL.KE*KE_MISMATCH+(CTRL.Ld-CTRL.Lq)*CTRL.id_cmd) - omg_harnefors );
+    while(theta_d_harnefors>M_PI) theta_d_harnefors-=2*M_PI;
+    while(theta_d_harnefors<-M_PI) theta_d_harnefors+=2*M_PI;   
 }
 void control(double speed_cmd, double speed_cmd_dot){
-    // Input 1 is feedback: estimated speed or measured speed
+    // Input 1 is feedback: estimated speed/position or measured speed/position
     #if SENSORLESS_CONTROL
-        getch("Not Implemented");
-        // CTRL.omg_fb    ;
-        // CTRL.omega_syn ;
+        #if SENSORLESS_CONTROL_HFSI
+            CTRL.omg__fb     = hfsi.omg_elec;
+            CTRL.theta_d__fb = hfsi.theta_d;
+        #else
+            // getch("Not Implemented");
+            // CTRL.omg__fb    ;
+            // CTRL.omega_syn ;
+            CTRL.omg__fb     = OB_OMG;
+            CTRL.theta_d__fb = OB_POS;
+        #endif
     #else
-        CTRL.omg_fb = sm.omg;
+        // harnefors_scvm();
+        // CTRL.omg__fb     = omg_harnefors;
+        // CTRL.theta_d__fb = theta_d_harnefors;
+
+        // from measurement() in main.c
+        CTRL.omg__fb     = sm.omg_elec;
+        CTRL.theta_d__fb = sm.theta_d; 
     #endif
+
     // Input 2 is feedback: measured current 
-    CTRL.ial_fb = IS_C(0);
-    CTRL.ibe_fb = IS_C(1);
-    // Input 3 is the rotor d-axis position
-    #if SENSORLESS_CONTROL
-        getch("Not Implemented");
-    #else
-        CTRL.theta_M = sm.theta_d;
-    #endif
+    CTRL.ial__fb = IS_C(0);
+    CTRL.ibe__fb = IS_C(1);
 
+    // Input 3 is the flux linkage command 
     #if CONTROL_STRATEGY == NULL_D_AXIS_CURRENT_CONTROL
-        // Flux (linkage) command
         CTRL.rotor_flux_cmd = 0.0;
+        CTRL.cosT = cos(CTRL.theta_d__fb); 
+        CTRL.sinT = sin(CTRL.theta_d__fb);
+    #else
+        getch("Not Implemented");        
     #endif
 
-    // M-axis current command
-    CTRL.iMs_cmd = CTRL.rotor_flux_cmd / CTRL.Ld;
+    // d-axis current command
+    CTRL.id_cmd = CTRL.rotor_flux_cmd / CTRL.Ld;
 
-    // T-axis current command
+    // q-axis current command
     static int vc_count = 0;
-    if(vc_count++==VC_LOOP_CEILING*DOWN_FREQ_EXE_INVERSE){ 
+    if(vc_count++ == SPEED_LOOP_CEILING){
+        // velocity control loop execution frequency is 40 times slower than current control loop execution frequency
         vc_count = 0;
-        CTRL.omg_ctrl_err = CTRL.omg_fb - speed_cmd*RPM_2_RAD_PER_SEC;
-        CTRL.iTs_cmd = - PI(&CTRL.pi_speed, CTRL.omg_ctrl_err);
+        CTRL.omg_ctrl_err = CTRL.omg__fb - speed_cmd*RPM_2_RAD_PER_SEC;
+        CTRL.iq_cmd = - PID(&CTRL.PID_speed, CTRL.omg_ctrl_err);
 
+        // for plot
         CTRL.speed_ctrl_err = CTRL.omg_ctrl_err * RAD_PER_SEC_2_RPM;
     }
 
-    #if CONTROL_STRATEGY == NULL_D_AXIS_CURRENT_CONTROL
-        CTRL.cosT = cos(CTRL.theta_M); 
-        CTRL.sinT = sin(CTRL.theta_M);
+    // Measured current in d-q frame
+    CTRL.id__fb = AB2M(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
+    CTRL.iq__fb = AB2T(CTRL.ial__fb, CTRL.ibe__fb, CTRL.cosT, CTRL.sinT);
+
+    // For luenberger position observer for HFSI
+    CTRL.Tem     = CTRL.npp * (CTRL.KE*CTRL.iq__fb + (CTRL.Ld-CTRL.Lq)*CTRL.id__fb*CTRL.iq__fb);
+    CTRL.Tem_cmd = CTRL.npp * (CTRL.KE*CTRL.iq_cmd + (CTRL.Ld-CTRL.Lq)*CTRL.id_cmd*CTRL.iq_cmd);
+
+    // Voltage command in d-q frame
+    double vd, vq;
+    vd = - PID(&CTRL.PID_id, CTRL.id__fb-CTRL.id_cmd);
+    vq = - PID(&CTRL.PID_iq, CTRL.iq__fb-CTRL.iq_cmd);
+
+    // Current loop decoupling (skipped for now)
+    CTRL.ud_cmd = vd;
+    CTRL.uq_cmd = vq;
+
+    #ifdef HFSI_ON
+        // Extra excitation for observation
+        {
+            static int dfe_counter = 0; 
+            if(dfe_counter++==HFSI_CEILING){
+                dfe_counter = 0;
+                hfsi.square_wave_internal_register *= -1;
+            }
+            // hfsi.square_wave_internal_register *= -1;
+            CTRL.ud_cmd += HFSI_VOLTAGE*hfsi.square_wave_internal_register;
+        }
     #endif
 
-    // Measured current in M-T frame
-    CTRL.iMs = AB2M(CTRL.ial_fb, CTRL.ibe_fb, CTRL.cosT, CTRL.sinT);
-    CTRL.iTs = AB2T(CTRL.ial_fb, CTRL.ibe_fb, CTRL.cosT, CTRL.sinT);
-
-    // Voltage command in M-T frame
-    double vM, vT;
-    vM = - PI(&CTRL.pi_iD, CTRL.iMs-CTRL.iMs_cmd);
-    vT = - PI(&CTRL.pi_iQ, CTRL.iTs-CTRL.iTs_cmd);
-
-    // Current loop decoupling (skipped for now)
-    CTRL.uMs_cmd = vM;
-    CTRL.uTs_cmd = vT;
-
     // Voltage command in alpha-beta frame
-    CTRL.ual = MT2A(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
-    CTRL.ube = MT2B(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
+    CTRL.ual = MT2A(CTRL.ud_cmd, CTRL.uq_cmd, CTRL.cosT, CTRL.sinT);
+    CTRL.ube = MT2B(CTRL.ud_cmd, CTRL.uq_cmd, CTRL.cosT, CTRL.sinT);
 }
-double regulator(struct PI_Reg *reg, double error, int bool_turn_on){
-    double temp=0.0;
-    if(bool_turn_on){
-        temp = - PI(reg, error);
-    }else{
-        temp = 0;
-        reg->i_state = 0;
-    }
-    return temp;
-}
-#define DESIGN_0p2 (0.2)
-#define DESIGN_0p5 (0.5)
-#define DESIGN_1Edash2 (1e-2)
-#define CURRENT_STEADY_THRESHOLD DESIGN_1Edash2
-#define CURRENT_STEADY_SPAN (DESIGN_0p2/TS)
-int reachSteadyStateCurrent(double ia_cmd, double ia_c){
-
-    if(fabs(ia_cmd-ia_c) < CURRENT_STEADY_THRESHOLD){
-        // Avoid to collect over-shoot data
-        CTRL.count_currentSteadyState += 1;
-
-        if(CTRL.count_currentSteadyState>CURRENT_STEADY_SPAN){
-            return true; // 一次判断稳态，永远返回true。当然，也可以设计成回差的形式——达到稳态后开始判断是否脱离稳态。
-        }
-    }
-    return false;
-}
-#define INDUCTANCE_ID_FREQUENCY 50.0 // Hz
-#define STEADY_STATE_CYCLES 20 // 0.4 s
-#define NUMBER_OF_SS_SAMPLING (STEADY_STATE_CYCLES/INDUCTANCE_ID_FREQUENCY/TS)
-void selfcommissioning(){
-
-    #define RATED_VOLTAGE 200 // Vrms (line-to-line)
-    #define RATED_CURRENT 10 // Arms (line-to-line)
-    #define RATED_FREQUENCY 50 // Hz
-    #define RATED_MECHANICAL_SPEED 1500 // rpm
-
-    int bool_alpha_axis_turn_on=true;
-    int bool_beta_axis_turn_on=true;
-    int bool_inductance_identification=false;
-
-    double d_axis_current_amplitude_used_in_inductance_identification=0.0, q_axis_current_amplitude_used_in_inductance_identification = 0.0; // A
-    double vd_PR_pose=0.0, vq_PR_pose=0.0, vd_PR_nese=0.0, vq_PR_nese=0.0;
-
-    if(CTRL.timebase < 5){
-        CTRL.ial_cmd = 0;
-        CTRL.ibe_cmd = 0.2*RATED_CURRENT;
-        bool_alpha_axis_turn_on = false;
-        bool_beta_axis_turn_on = true;
-    }else if(CTRL.timebase < 10){
-        CTRL.ial_cmd = 0.2*RATED_CURRENT;
-        CTRL.ibe_cmd = 0;
-        bool_alpha_axis_turn_on = true;
-        bool_beta_axis_turn_on = false;
-    }else if(CTRL.timebase < 30){
-        CTRL.ial_cmd = 0.2*RATED_CURRENT;
-        CTRL.ibe_cmd = 0;
-
-        bool_alpha_axis_turn_on = true;
-        bool_beta_axis_turn_on = true;
-
-        bool_inductance_identification = true;
-        d_axis_current_amplitude_used_in_inductance_identification = 0.01*RATED_CURRENT;
-        q_axis_current_amplitude_used_in_inductance_identification = 0.00*RATED_CURRENT;
-
-        if(reachSteadyStateCurrent(CTRL.ial_cmd, IS_C(0))){
-            CTRL.ial_average += IS_C(0);
-            CTRL.count_inductance_id_data += 1;
-            if(CTRL.count_inductance_id_data > NUMBER_OF_SS_SAMPLING){
-                CTRL.Ld_cal = 
-            }
-        }
-
-    }else{
-        CTRL.ial_cmd = 0;
-        CTRL.ibe_cmd = 0;
-        bool_alpha_axis_turn_on = true;
-        bool_beta_axis_turn_on = true;
-
-        bool_inductance_identification = false;
-        d_axis_current_amplitude_used_in_inductance_identification = 0.0;
-        q_axis_current_amplitude_used_in_inductance_identification = 0.0;
-    }
-
-    double val, vbe;
-    val    = regulator(&CTRL.pi_iD, IS_C(0) - CTRL.ial_cmd, bool_alpha_axis_turn_on);
-    vbe    = regulator(&CTRL.pi_iQ, IS_C(1) - CTRL.ibe_cmd, bool_beta_axis_turn_on);
-
-    // 正序测量电流
-    CTRL.ids_pose = AB2M(IS_C(0), IS_C(1), cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-    CTRL.iqs_pose = AB2T(IS_C(0), IS_C(1), cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-
-    vd_PR_pose = regulator(&CTRL.pi_iD_PR_pose, CTRL.ids_pose - d_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
-    vq_PR_pose = regulator(&CTRL.pi_iQ_PR_pose, CTRL.iqs_pose - q_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
-
-    // 负序测量电流
-    CTRL.ids_nese = AB2M(IS_C(0), IS_C(1), cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-    CTRL.iqs_nese = AB2T(IS_C(0), IS_C(1), cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-
-    vd_PR_nese = regulator(&CTRL.pi_iD_PR_nese, CTRL.ids_nese - d_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
-    vq_PR_nese = regulator(&CTRL.pi_iQ_PR_nese, CTRL.iqs_nese - q_axis_current_amplitude_used_in_inductance_identification, bool_inductance_identification);
-
-    double val_PR_pose, vbe_PR_pose, val_PR_nese, vbe_PR_nese;
-    val_PR_pose = MT2A(vd_PR_pose, vq_PR_pose, cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-    vbe_PR_pose = MT2B(vd_PR_pose, vq_PR_pose, cos(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-    val_PR_nese = MT2A(vd_PR_nese, vq_PR_nese, cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-    vbe_PR_nese = MT2B(vd_PR_nese, vq_PR_nese, cos(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase), sin(-INDUCTANCE_ID_FREQUENCY*2*M_PI*CTRL.timebase));
-
-    // Current loop decoupling (skipped for now)
-    CTRL.ual_cmd = val + val_PR_pose + val_PR_nese;
-    CTRL.ube_cmd = vbe + vbe_PR_pose + vbe_PR_nese;
-
-    // CTRL.ual_cmd = val + cos(50*2*M_PI*CTRL.timebase);
-    // CTRL.ube_cmd = vbe + 0*cos(50*2*M_PI*CTRL.timebase);
-
-    // // Voltage command in alpha-beta frame
-    // CTRL.ual = MT2A(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
-    // CTRL.ube = MT2B(CTRL.uMs_cmd, CTRL.uTs_cmd, CTRL.cosT, CTRL.sinT);
-    CTRL.ual = CTRL.ual_cmd;
-    CTRL.ube = CTRL.ube_cmd;
-}
-#endif
 
 
 
 /* Command */
 void cmd_fast_speed_reversal(double timebase, double instant, double interval, double rpm_cmd){
     if(timebase > instant+2*interval){
-        ACM.rpm_cmd = rpm_cmd;
+        ACM.rpm_cmd = 1*1500 + rpm_cmd;
     }else if(timebase > instant+interval){
-        ACM.rpm_cmd = -rpm_cmd;
+        ACM.rpm_cmd = 1*1500 + -rpm_cmd;
     }else if(timebase > instant){
-        ACM.rpm_cmd = rpm_cmd;
+        ACM.rpm_cmd = 1*1500 + rpm_cmd;
+    }else{
+        ACM.rpm_cmd = 20; // default initial command
     }
 }
-
 
