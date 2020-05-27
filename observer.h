@@ -108,48 +108,5 @@ void ob_init();
 void observation();
 
 
-// ----------------------------- HFSI
-
-#define HFSI_ON false
-#define SENSORLESS_CONTROL_HFSI true
-
-#define HFSI_VOLTAGE 5 // V
-#define HFSI_CEILING 0 // Essential to be 1 because we assume h = TS, but in fact h = HFSI_CEILING * TS (?)
-
-#define LPF_TIME_CONST_INVERSE (5*2*M_PI) // time constant is 1/400 <=> cutoff frequency is 400/(2*pi) ||| 换句话说，截止频率 * 2pi = 时间常数的倒数 |||| f_cutoff = 1 / (time constant * 2*pi)
-#define LUENBERGER_GAIN_1 (45)   // 45       //45     // 30     // 30       // 30     // 30    // 20  // Large gain to position will cause steady state position error, but increase it close to limit
-#define LUENBERGER_GAIN_2 (750)  // (500)    //(500)  // (900)  // (750)    // (300)  // (300) // 100 // If speed estimate has too much dynamics during reversal, you need to increase this gain actually...
-#define LUENBERGER_GAIN_3 (9000) // (0*1800) //(2000) // (1500) // (0*6000) // (1500) // (790) // 500 // Tune reversal response to slight over-shoot
-
-void hfsi_do_in_measurement();
-void hfsi_do_after_control();
-void hfsi_init();
-struct HFSI_Data{
-    double test_signal_al;
-    double test_signal_be;
-    double test_signal_M;
-    double test_signal_T;
-    double M_lpf;
-    double T_lpf;
-    double M_hpf;
-    double T_hpf;
-    double theta_filter;
-    double theta_d_raw;
-    double theta_d;
-    double omg_elec;
-    double pseudo_load_torque;
-    double mismatch;
-
-    double tilde_theta_d;
-    double square_wave_internal_register;
-    double LAST_uM;
-
-    double h;
-};
-extern struct HFSI_Data hfsi;
-double difference_between_two_angles(double first, double second);
-void dynamics_lpf(double input, double *state, double *derivative);
-void RK4_111_general(void (*pointer_dynamics)(), double input, double *state, double hs);
-
 #endif
 
