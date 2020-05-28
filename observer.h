@@ -108,5 +108,7 @@ void ob_init();
 void observation();
 
 
+double difference_between_two_angles(double first, double second);
+
 #endif
 

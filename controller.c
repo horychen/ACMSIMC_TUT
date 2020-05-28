@@ -127,13 +127,13 @@ void control(double speed_cmd, double speed_cmd_dot){
             CTRL.theta_d__fb = OB_POS;
         #endif
     #else
-        // harnefors_scvm();
-        // CTRL.omg__fb     = omg_harnefors;
-        // CTRL.theta_d__fb = theta_d_harnefors;
+        harnefors_scvm();
+        CTRL.omg__fb     = omg_harnefors;
+        CTRL.theta_d__fb = theta_d_harnefors;
 
-        // from measurement() in main.c
-        CTRL.omg__fb     = sm.omg_elec;
-        CTRL.theta_d__fb = sm.theta_d; 
+        // // from measurement() in main.c
+        // CTRL.omg__fb     = sm.omg_elec;
+        // CTRL.theta_d__fb = sm.theta_d; 
     #endif
 
     // Input 2 is feedback: measured current 

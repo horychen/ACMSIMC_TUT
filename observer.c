@@ -41,4 +41,30 @@ void sm_init(){
 }
 
 
+double difference_between_two_angles(double first, double second){
+    while(first>2*M_PI){
+        first-=2*M_PI;
+    }
+    while(second>2*M_PI){
+        second-=2*M_PI;
+    }
+
+    while(first<0.0){
+        first+=2*M_PI;
+    }
+    while(second<0.0){
+        second+=2*M_PI;
+    }
+
+    if(fabs(first-second)<M_PI){
+        return first-second;
+    }else{
+        if(first>second){
+            return first-2*M_PI-second;
+        }else{                
+            return first+2*M_PI-second;
+        }
+    }
+}
+
 

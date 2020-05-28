@@ -215,28 +215,28 @@ int main(){
 
         // printf("%d\n", _);
 
-        // /* Command (Speed or Position) */
-        // // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
-        // // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
-        // if(CTRL.timebase>14){
-        //     ACM.rpm_cmd = 900; // 40
-        // }else if(CTRL.timebase>12){
-        //     ACM.rpm_cmd = 40; // 40
-        // }else if(CTRL.timebase>9){
-        //     ACM.rpm_cmd = 0;
-        // }else if(CTRL.timebase>6){
-        //     ACM.rpm_cmd = -40;
-        // }else if(CTRL.timebase>3){
-        //     ACM.rpm_cmd = -20;
-        // }else{
-        //     ACM.rpm_cmd = -10;
-        // }
+        /* Command (Speed or Position) */
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
+        // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
+        if(CTRL.timebase>14){
+            ACM.rpm_cmd = 900; // 40
+        }else if(CTRL.timebase>12){
+            ACM.rpm_cmd = 40; // 40
+        }else if(CTRL.timebase>9){
+            ACM.rpm_cmd = 0;
+        }else if(CTRL.timebase>6){
+            ACM.rpm_cmd = -40;
+        }else if(CTRL.timebase>3){
+            ACM.rpm_cmd = -20;
+        }else{
+            ACM.rpm_cmd = -10;
+        }
 
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
         // ACM.Tload = 2 * ACM.rpm/20; // speed-dependent load
-        // ACM.Tload = 4 * sign(ACM.rpm); // speed-direction-dependent load
+        ACM.Tload = 4 * sign(ACM.rpm); // speed-direction-dependent load
 
         /* Simulated ACM */
         if(machine_simulation()){ 
@@ -256,9 +256,9 @@ int main(){
 
             write_data_to_file(fw);
 
-            // control(ACM.rpm_cmd, 0);
+            control(ACM.rpm_cmd, 0);
 
-            commissioning();
+            // commissioning();
         }
 
         inverter_model();
@@ -277,8 +277,8 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    // fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud_cmd[V],uq_cmd[V],id[A],id_err[A],iq_cmd[A],iq_err[A],CTRL_POS_ERR,MEAS_POS_ERR,theta_d_harnefors,POS_ERR_Harnefors,omg_harnefors,OMG_ERR_Harnefors\n");
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud[V],uq[V],IS_C(0),CTRL.ual,ACM.ual,ACM.theta_d,DIST_AL,COMM.KE\n");
+    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud_cmd[V],uq_cmd[V],id[A],id_err[A],iq_cmd[A],iq_err[A],CTRL_POS_ERR,MEAS_POS_ERR,theta_d_harnefors,POS_ERR_Harnefors,omg_harnefors,OMG_ERR_Harnefors\n");
+    // fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud[V],uq[V],IS_C(0),CTRL.ual,ACM.ual,ACM.theta_d,DIST_AL,COMM.KE\n");
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -299,15 +299,15 @@ void write_data_to_file(FILE *fw){
         if(++j == DOWN_SAMPLE)
         {
             j=0;
-            // fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-            //         ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
-            //         CTRL.id__fb, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, difference_between_two_angles(ACM.x[3], CTRL.theta_d__fb)/M_PI*180, difference_between_two_angles(ACM.x[3], sm.theta_d)/M_PI*180,
-            //         theta_d_harnefors, difference_between_two_angles(ACM.theta_d, theta_d_harnefors)/M_PI*180, omg_harnefors*RAD_PER_SEC_2_RPM, (sm.omg_elec-omg_harnefors)*RAD_PER_SEC_2_RPM
-            //         );
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-                    ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], ACM.ud, ACM.uq,
-                    IS_C(0), CTRL.ual, ACM.ual, ACM.theta_d, DIST_AL, COMM.KE
+            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                    ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
+                    CTRL.id__fb, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, difference_between_two_angles(ACM.x[3], CTRL.theta_d__fb)/M_PI*180, difference_between_two_angles(ACM.x[3], sm.theta_d)/M_PI*180,
+                    theta_d_harnefors, difference_between_two_angles(ACM.theta_d, theta_d_harnefors)/M_PI*180, omg_harnefors*RAD_PER_SEC_2_RPM, (sm.omg_elec-omg_harnefors)*RAD_PER_SEC_2_RPM
                     );
+            // fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            //         ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], ACM.ud, ACM.uq,
+            //         IS_C(0), CTRL.ual, ACM.ual, ACM.theta_d, DIST_AL, COMM.KE
+            //         );
         }
     }
 
