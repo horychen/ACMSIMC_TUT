@@ -207,25 +207,6 @@ int event_PMFluxLinkageId(void){
 #define TEST_SIGNAL_PERIOD (2)
 #define SPEED_COMMAND_BIAS 200
 #define SPEED_COMMAND_RANGE 10
-// void periodicRampSpeedCommand(double *rpm_cmd, double *rpm_cmd_dot){
-//     static double t = 0;
-//     t = CTRL.timebase - TEST_SIGNAL_PERIOD*(((long)CTRL.timebase)/TEST_SIGNAL_PERIOD);
-//     if(t < 0.5*TEST_SIGNAL_PERIOD){
-//         *rpm_cmd_dot = 16*0.0125 / TS;
-//         *rpm_cmd += TS * (*rpm_cmd_dot);
-//         if(*rpm_cmd>=SPEED_COMMAND_RANGE+SPEED_COMMAND_BIAS){
-//             *rpm_cmd = SPEED_COMMAND_RANGE+SPEED_COMMAND_BIAS;
-//             *rpm_cmd_dot = 0.0;
-//         }
-//     }else{
-//         *rpm_cmd_dot = -16*0.0125 / TS;
-//         *rpm_cmd += TS * (*rpm_cmd_dot);
-//         if(*rpm_cmd<-SPEED_COMMAND_RANGE+SPEED_COMMAND_BIAS){
-//             *rpm_cmd = -SPEED_COMMAND_RANGE+SPEED_COMMAND_BIAS;
-//             *rpm_cmd_dot = 0.0;
-//         }
-//     }
-// }
 int event_inertiaId(void){
 
     static long int counterEntered = 0;
