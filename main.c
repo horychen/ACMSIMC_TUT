@@ -277,8 +277,12 @@ int main(){
 /* Utility */
 void write_header_to_file(FILE *fw){
     // no space is allowed!
-    // fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud_cmd[V],uq_cmd[V],id[A],id_err[A],iq_cmd[A],iq_err[A],CTRL_POS_ERR,MEAS_POS_ERR,theta_d_harnefors,POS_ERR_Harnefors,omg_harnefors,OMG_ERR_Harnefors\n");
-    fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud[V],uq[V],IS_C(0),CTRL.ual,ACM.ual,ACM.theta_d,DIST_AL,COMM.KE\n");
+    #if HFSI_ON
+        fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rad/s],x3(position)[rad],ud_cmd[V],uq_cmd[V],id_cmd[A],id_err[A],iq_cmd[A],iq_err[A],|eemf|[V],eemf_be[V],theta_d[rad],theta_d__eemf[rad],mismatch[rad],sin(mismatch)[rad],OB_POS,sin(ER_POS),OB_EEMF_BE,error(OB_EEMF),OB_OMG,er_omg,test_signal_al,test_signal_be,IS_LPF_Euler(0),IS_LPF_Euler(1),IS_HPF_Euler(0),IS_HPF_Euler(1),M_hpf,T_hpf,HFSI_POS,HFSI_POS_ER,hfsi.theta_d,ER(theta_d),hfsi.omg_elec,ER(omg_elec),hfsi.TL,mismatch\n");
+    #else
+        // fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud_cmd[V],uq_cmd[V],id[A],id_err[A],iq_cmd[A],iq_err[A],CTRL_POS_ERR,MEAS_POS_ERR,theta_d_harnefors,POS_ERR_Harnefors,omg_harnefors,OMG_ERR_Harnefors\n");
+        fprintf(fw, "x0(id)[A],x1(iq)[A],x2(speed)[rpm],x3(position)[rad],ud[V],uq[V],IS_C(0),CTRL.ual,ACM.ual,ACM.theta_d,DIST_AL,COMM.KE,COMM.Js\n");
+    #endif
     {
         FILE *fw2;
         fw2 = fopen("info.dat", "w");
@@ -293,23 +297,41 @@ void write_data_to_file(FILE *fw){
     static int bool_animate_on = false;
     static int j=0,jj=0; // j,jj for down sampling
 
-
-    // if(CTRL.timebase>20)
-    {
-        if(++j == DOWN_SAMPLE)
+    #if HFSI_ON
+        // if(CTRL.timebase>20)
         {
-            j=0;
-            // fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-            //         ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
-            //         CTRL.id__fb, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, difference_between_two_angles(ACM.x[3], CTRL.theta_d__fb)/M_PI*180, difference_between_two_angles(ACM.x[3], sm.theta_d)/M_PI*180,
-            //         theta_d_harnefors, difference_between_two_angles(ACM.theta_d, theta_d_harnefors)/M_PI*180, omg_harnefors*RAD_PER_SEC_2_RPM, (sm.omg_elec-omg_harnefors)*RAD_PER_SEC_2_RPM
-            //         );
-            fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-                    ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], ACM.ud, ACM.uq,
-                    IS_C(0), CTRL.ual, ACM.ual, ACM.theta_d, DIST_AL, COMM.KE
-                    );
+            if(++j == DOWN_SAMPLE)
+            {
+                j=0;
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                        ACM.x[0], ACM.x[1], ACM.x[2], ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
+                        CTRL.id_cmd, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, ACM.eemf_q, ACM.eemf_be,
+                        ACM.theta_d, ACM.theta_d__eemf,ACM.theta_d-ACM.theta_d__eemf,difference_between_two_angles(ACM.theta_d, ACM.theta_d__eemf)/M_PI*180,
+                        OB_POS, difference_between_two_angles(ACM.theta_d, OB_POS)/M_PI*180, OB_EEMF_BE, ACM.eemf_be-OB_EEMF_BE, OB_OMG, ACM.omg_elec-OB_OMG,
+                        hfsi.test_signal_al, hfsi.test_signal_be, IS_LPF(0), IS_LPF(1), IS_HPF(0), IS_HPF(1),
+                        hfsi.M_hpf, hfsi.T_hpf, hfsi.theta_d_raw, difference_between_two_angles(ACM.theta_d, hfsi.theta_d_raw)/M_PI*180,
+                        hfsi.theta_d, difference_between_two_angles(ACM.theta_d, hfsi.theta_d)/M_PI*180, hfsi.omg_elec, sm.omg_elec-hfsi.omg_elec, hfsi.pseudo_load_torque*CTRL.Js/CTRL.npp, hfsi.mismatch
+                        );
+            }
         }
-    }
+    #else
+        // if(CTRL.timebase>20)
+        {
+            if(++j == DOWN_SAMPLE)
+            {
+                j=0;
+                // fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                //         ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], CTRL.ud_cmd, CTRL.uq_cmd, 
+                //         CTRL.id__fb, CTRL.id__fb-CTRL.id_cmd, CTRL.iq_cmd, CTRL.iq__fb-CTRL.iq_cmd, difference_between_two_angles(ACM.x[3], CTRL.theta_d__fb)/M_PI*180, difference_between_two_angles(ACM.x[3], sm.theta_d)/M_PI*180,
+                //         theta_d_harnefors, difference_between_two_angles(ACM.theta_d, theta_d_harnefors)/M_PI*180, omg_harnefors*RAD_PER_SEC_2_RPM, (sm.omg_elec-omg_harnefors)*RAD_PER_SEC_2_RPM
+                //         );
+                fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+                        ACM.x[0], ACM.x[1], ACM.x[2]*RAD_PER_SEC_2_RPM, ACM.x[3], ACM.ud, ACM.uq,
+                        IS_C(0), CTRL.ual, ACM.ual, ACM.theta_d, DIST_AL, COMM.KE, COMM.Js
+                        );
+            }
+        }
+    #endif
 
     // if(bool_animate_on==false){
     //     bool_animate_on = true;
@@ -317,6 +339,7 @@ void write_data_to_file(FILE *fw){
     //     system("start python ./ACMAnimate.py"); 
     // }
 }
+
 
 int isNumber(double x){
     // This looks like it should always be true, 
