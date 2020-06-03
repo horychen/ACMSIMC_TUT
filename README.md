@@ -24,6 +24,7 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [PMSM] commissioning_pmsm: (under developing) self-commissioning procedure for permanent magnet motor.
 - [PMSM] eemf: (still debugging) sensorless control based on extended emf method proposed by Zhiqian Chen et al. (2003). Sensorless open loop works but closed-loop has problems.
 
+(I recommend to use GitKraken to view this repository, so you know clearly which branch is the newest one. Note that master is obsolete. Sorry about my poor codes management skills T-T.)
 
 ## Visualization
 - The plots are made using package matplotlib. 
