@@ -23,7 +23,6 @@ double PID(struct PID_Reg *r, double err){
     #undef I_LIMIT
 }
 
-
 /* Initialization */
 struct ControllerForExperiment CTRL;
 void CTRL_init(){
@@ -100,9 +99,11 @@ void harnefors_scvm(){
     #define KE_MISMATCH 1.0 // 0.7
     double d_axis_emf;
     double q_axis_emf;
-    #define LAMBDA 2
+    #define LAMBDA 2 // 2
+    #define CJH_TUNING_A 25 // 1
+    #define CJH_TUNING_B 1 // 1
     double lambda_s = LAMBDA * sign(omg_harnefors);
-    double alpha_bw_lpf = 0.1*(1500*RPM_2_RAD_PER_SEC) + 1*2*LAMBDA*fabs(omg_harnefors);
+    double alpha_bw_lpf = CJH_TUNING_A*0.1*(1500*RPM_2_RAD_PER_SEC) + CJH_TUNING_B*2*LAMBDA*fabs(omg_harnefors);
     // d_axis_emf = CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + omg_harnefors*1.0*CTRL.Lq*CTRL.iq_cmd; // If Ld=Lq.
     // q_axis_emf = CTRL.uq_cmd - 1*CTRL.R*CTRL.iq_cmd - omg_harnefors*1.0*CTRL.Ld*CTRL.id_cmd; // If Ld=Lq.
     d_axis_emf = CTRL.ud_cmd - 1*CTRL.R*CTRL.id_cmd + omg_harnefors*1.0*CTRL.Lq*CTRL.iq_cmd; // eemf
@@ -123,17 +124,19 @@ void control(double speed_cmd, double speed_cmd_dot){
             // getch("Not Implemented");
             // CTRL.omg__fb    ;
             // CTRL.omega_syn ;
-            CTRL.omg__fb     = OB_OMG;
-            CTRL.theta_d__fb = OB_POS;
+
+            // CTRL.omg__fb     = OB_OMG;
+            // CTRL.theta_d__fb = OB_POS;
+
+            harnefors_scvm();
+            CTRL.omg__fb     = omg_harnefors;
+            CTRL.theta_d__fb = theta_d_harnefors;
         #endif
     #else
-        harnefors_scvm();
-        CTRL.omg__fb     = omg_harnefors;
-        CTRL.theta_d__fb = theta_d_harnefors;
 
-        // // from measurement() in main.c
-        // CTRL.omg__fb     = sm.omg_elec;
-        // CTRL.theta_d__fb = sm.theta_d; 
+        // from measurement() in main.c
+        CTRL.omg__fb     = sm.omg_elec;
+        CTRL.theta_d__fb = sm.theta_d; 
     #endif
 
     // Input 2 is feedback: measured current 

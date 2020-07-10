@@ -227,16 +227,17 @@ int main(){
         }else if(CTRL.timebase>6){
             ACM.rpm_cmd = -40;
         }else if(CTRL.timebase>3){
-            ACM.rpm_cmd = -20;
+            // ACM.rpm_cmd = -20;
+            ACM.rpm_cmd = 1 * RAD_PER_SEC_2_RPM;
         }else{
-            ACM.rpm_cmd = -10;
+            ACM.rpm_cmd = -10*0;
         }
 
         /* Load Torque */
         // ACM.Tload = 0 * sign(ACM.rpm); // No-load test
         // ACM.Tload = ACM.Tem; // Blocked-rotor test
         // ACM.Tload = 2 * ACM.rpm/20; // speed-dependent load
-        ACM.Tload = 4 * sign(ACM.rpm); // speed-direction-dependent load
+        ACM.Tload = 0 * sign(ACM.rpm); // speed-direction-dependent load
 
         /* Simulated ACM */
         if(machine_simulation()){ 
