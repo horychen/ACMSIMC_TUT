@@ -2,17 +2,64 @@
 
 /* PI Control
  * */
+#define INCREMENTAL_PID TRUE
+#if INCREMENTAL_PID
 double PID(struct PID_Reg *r, double err){
+
+    #define O_STATE r->o_state
+    #define E_STATE r->e_state
+    #define I_LIMIT r->i_limit
+
+    double delta_u_n;
+    delta_u_n = r->Kp * ( err - E_STATE ) + r->Ki * err;
+
+    double output;
+    output = O_STATE + delta_u_n;
+
+    if(output > I_LIMIT)
+        output = I_LIMIT;
+    else if(output < -I_LIMIT)
+        output = -I_LIMIT;
+
+    E_STATE = err; 
+    O_STATE = output;
+
+    return output;
+
+    #undef O_STATE
+    #undef E_STATE
+    #undef I_LIMIT
+}
+#else
+double PID(struct PID_Reg *r, double err){
+
+    #define DYNAMIC_CLAPMING TRUE
+
     #define I_STATE r->i_state
     #define I_LIMIT r->i_limit
     double output;
-    I_STATE += err * r->Ki;    // 积分
-    if( I_STATE > I_LIMIT)     // 添加积分饱和特性
-        I_STATE = I_LIMIT; 
-    else if( I_STATE < -I_LIMIT)
-        I_STATE = -I_LIMIT;
+    double P_output;
 
-    output = I_STATE + err * r->Kp;
+    P_output = err * r->Kp; // 比例
+
+    I_STATE += err * r->Ki; // 积分
+
+    // 添加积分饱和特性
+    #if DYNAMIC_CLAPMING
+        // dynamic clamping
+        if( I_STATE > I_LIMIT - P_output)
+            I_STATE = I_LIMIT - P_output;
+        else if( I_STATE < -I_LIMIT - P_output)
+            I_STATE = -I_LIMIT - P_output;
+    #else
+        // static clamping
+        if( I_STATE > I_LIMIT)
+            I_STATE = I_LIMIT; 
+        else if( I_STATE < -I_LIMIT)
+            I_STATE = -I_LIMIT;
+    #endif
+
+    output = I_STATE + P_output;
 
     if(output > I_LIMIT)
         output = I_LIMIT;
@@ -22,6 +69,7 @@ double PID(struct PID_Reg *r, double err){
     #undef I_STATE
     #undef I_LIMIT
 }
+#endif
 
 /* Initialization */
 struct ControllerForExperiment CTRL;

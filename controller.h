@@ -9,6 +9,9 @@ struct PID_Reg{
    double   Ki; // Ki = Kp/Ti*TS (note TS is included here for ease of discrete implementaion)
    double   i_state; // Integral internal state
    double   i_limit; // Output limit
+
+   double   e_state; // last error internal state
+   double   o_state; // last output internal state
 };
 double PID(struct PID_Reg *r, double err);
 
