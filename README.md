@@ -4,7 +4,7 @@
 ## Introduction
 I have used C to simulate motor control and adptive observers for over 4 years now.
 This is a tutorial for those who hate using Simulink to simulate ac motor control.
-The benefit is that you can direct reuse the codes in DSP based motor drive.
+The benefit is that you can directly reuse the codes in DSP based motor drive.
 
 ## Numerial Methods
 The numerical integration method is currently RK4, which is quite enough. 
@@ -20,9 +20,9 @@ DoPri54 will be included in future version (including stiffness detection and va
 - [IM] \_femm: (This branch does not really belong here but I don't want to create a new repository for it...) It is about the design of the induction motor using free softwares as well as fitting the design to the equivalent circuit parameters for further control simulation.
 - [IM] saturation: include iron core saturation effect into the induction motor model simulation.
 - [Both] inverter_model: simple inverter modeling based on the paper 1996-Choi.Sul-Inverter.
-- [Both] master: contain all the features of the branches mentioned above. The master branch is not updated anymore from this point, because I realized that having both IM and PMSM codes in one place is a silly idea.
+- [Both] **master: contain all the features of the branches mentioned above. The master branch is not updated anymore from this point, because I realized that having both IM and PMSM codes in one place is a silly idea.**
 - [PMSM] commissioning_pmsm: (under developing) self-commissioning procedure for permanent magnet motor.
-- [PMSM] eemf: (still debugging) sensorless control based on extended emf method proposed by Zhiqian Chen et al. (2003). Sensorless open loop works but closed-loop has problems.
+- [PMSM] eemf: sensorless control based on extended emf method proposed by Zhiqian Chen et al. (2003). Sensorless open loop works but closed-loop has problems.
 - [PMSM] hfsi-yoon: pulsating type square wave high frequency signal injection method based sensorless control for motor with saliency.
 - [PMSM] commissioning_spmsm: self-commissioning procedure for surface mounted permanent magnet synchronous motor.
 - [PMSM] spmsm_scvm_harnerfors06: statically compensated voltage model based sensorless control for SPMSM. This branch also includes new dynamic anti-windup and incremental PID regulator.
@@ -45,6 +45,37 @@ DoPri54 will be included in future version (including stiffness detection and va
 - FEMM is a Windows-only FEA software. 
     - Alternative is ElmerFEM for Linux, but it is poorly documented. Please DO NOT try it out unless you are a ドM.
 - Others are not tested yet. (Linux users should be able to figure it out...)
+
+## Compile
+
+### Compile in Sublime Text
+Create a file named "**!C_GCC.sublime-build**" in this folder "C:\Users\yourUserName\AppData\Roaming\Sublime Text 3\Packages\User" with the following content:
+```json
+    {
+        "working_dir": "$file_path",
+        "cmd": "gcc -Wall $file_name -o $file_base_name",
+        "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+        "selector": "source.c",
+        "variants": 
+        [
+            {   
+            "name": "ACMSIMC_TUT",
+                // "shell_cmd": "gcc $file controller.c observer.c -L. -o $file_base_name && start cmd /c \"${file_path}/${file_base_name}\""
+                "shell_cmd": "gcc $file commissioning.c inverter.c controller.c observer.c -L. -o $file_base_name && start cmd /c \"${file_path}/${file_base_name}\""
+            }
+        ]
+    }
+```
+Press down Ctrl + Shift + B to select "ACMSIMC_TUT" and next time you only need to press down Ctrl + B to build.
+
+### Compile in cmd.exe
+Change directory to where main.c is and open the cmd.exe there and type:
+```batch
+gcc main.c commissioning.c inverter.c controller.c observer.c -I. -L. -o main
+```
+Then, double click main.exe to run.
+If you have python added to system path, plots will also pop up.
+
 
 ## Video Tutorials
 For unfamiliar users, I have been creating video tutorials. However, they are currently in Chinese. 
