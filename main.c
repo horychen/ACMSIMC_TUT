@@ -122,8 +122,8 @@ int main(){
     for(_=0;_<NUMBER_OF_LINES;++_){
 
         /* Command and Load Torque */
-        IM.rpm_cmd = 50;
-        IM.Tload = 1;
+        IM.rpm_cmd = 50; // rpm
+        IM.Tload = 10; // Nm
 
         /* Simulated IM */
         if(machine_simulation()){ 
@@ -178,7 +178,7 @@ void write_data_to_file(FILE *fw){
     {
         j=0;
         fprintf(fw, "%g,%g,%g,%g,%g\n",
-                IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.x[4]
+                IM.x[0], IM.x[1], IM.x[2], IM.x[3], IM.x[4]/IM.npp/2/M_PI*60 // from elec.rad/s to rpm
                 );
     }
     }
