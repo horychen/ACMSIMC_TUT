@@ -1,5 +1,6 @@
 #coding:u8
-from pylab import plt, mpl, np
+from pylab import mpl, np, plt
+
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 # from pprint import pprint
@@ -82,6 +83,7 @@ if __name__ == '__main__':
                                         (str(idx), df_profiles[key]),  
                                         # (str(idx), df_profiles[key]),  
                                         ]), time)
+    plt.savefig('../img/picture.png')
     plt.show()
     quit()
 
