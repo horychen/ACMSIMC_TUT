@@ -1,0 +1,28 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch", //这个应该是F1中出现的名字
+            "preLaunchTask": "Build",  //在launch之前运行的任务名，这个名字一定要跟tasks.json中的任务名字大小写一致
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe", //需要运行的是当前打开文件的目录中，名字和当前文件相同，但扩展名为exe的程序
+            "args": [],
+            "stopAtEntry": false, // 选为true则会在打开控制台后停滞，暂时不执行程序
+            "cwd": "${workspaceFolder}", // 当前工作路径：当前文件所在的工作空间
+            "environment": [],
+            "externalConsole": true,  // 是否使用外部控制台，选false的话，我的vscode会出现错误
+            "MIMode": "gdb",
+            "miDebuggerPath": "c:/MinGW/bin/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }]
+}

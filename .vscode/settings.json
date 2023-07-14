@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "acmsim.h": "c",
+        "conio.h": "c",
+        "stdlib.h": "c",
+        "math.h": "c",
+        "stdio.h": "c",
+        "controller.h": "c"
+    }
+}

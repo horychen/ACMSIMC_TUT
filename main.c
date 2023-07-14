@@ -219,7 +219,7 @@ int main(){
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 1500); // timebase, instant, interval, rpm_cmd
         // cmd_fast_speed_reversal(CTRL.timebase, 5, 5, 200); // timebase, instant, interval, rpm_cmd
         if(CTRL.timebase>14){
-            ACM.rpm_cmd = 900; // 40   double   e_state; // Integral internal state
+            ACM.rpm_cmd = 90; // 40   double   e_state; // Integral internal state
 
         }else if(CTRL.timebase>12){
             ACM.rpm_cmd = 40; // 40
@@ -269,7 +269,7 @@ int main(){
     fclose(fw);
 
     /* Fade out */
-    system("python ./ACMPlot.py"); 
+    system("python3 ../ACMPlot.py"); 
     // getch();
     // system("pause");
     // system("exit");
